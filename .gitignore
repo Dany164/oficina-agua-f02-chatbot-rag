@@ -1,0 +1,49 @@
+# =========================
+# Java / Maven
+# =========================
+target/
+*.class
+*.log
+
+# =========================
+# OpenAPI Generator
+# =========================
+# El código generado queda dentro de target/
+# y no debe versionarse.
+
+# =========================
+# Node / Next.js
+# =========================
+node_modules/
+.next/
+out/
+
+# =========================
+# IDE - IntelliJ IDEA
+# =========================
+.idea/
+*.iml
+/shelf/
+/workspace.xml
+/httpRequests/
+/queries/
+/dataSources/
+/dataSources.local.xml
+
+# =========================
+# Otros IDE
+# =========================
+.vscode/
+
+# =========================
+# Variables de entorno / secretos
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Sistema operativo
+# =========================
+Thumbs.db
+.DS_Store

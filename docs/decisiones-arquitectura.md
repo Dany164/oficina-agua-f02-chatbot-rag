@@ -15,12 +15,12 @@
 | `MODA-1` | Por hacer, sin asignar, informador: Dany Mateo. Representa la feature F02; **no se duplica** |
 | Historias, subtareas y sprints de F02 | **Ninguno creado todavía**, a propósito |
 | Repositorio | `github.com/Dany164/oficina-agua-f02-chatbot-rag`, **privado** durante el desarrollo; público solo si el curso lo exige |
-| Trabajo en Git | `main` con el commit inicial; rama `feature/f02-project-setup` con el commit `chore(f02): initialize project structure`. Pendiente: documentación (commit 2) y esqueleto de `backend/` (commit 3) |
+| Trabajo en Git | `main` contiene la estructura inicial, la documentación, el esqueleto Spring Boot de `backend/` y el Maven Wrapper (PR #1 y #2 fusionados). Siguiente rama: `feature/f02-openapi-contract` |
 | Integración GitHub–Jira | No asumida; se verifica cuando corresponda |
 | Grupo | Es el mismo que desarrolló el monolito en la Fase 1: conocemos el sistema y su base de datos |
 | Regla principal de Fase 2 | **El monolito heredado NO se modifica.** Todo es servicio nuevo alrededor de él |
 | Stack alineado con el curso | Spring Boot 3.5.x + JDK 17 (ver D-04) |
-| Entorno local | JDK 17 Temurin (sistema) listo; Docker, Git, Node 22 e IntelliJ Ultimate listos. JDK 21 instalado en `C:\dev\jdks\jdk-21.0.12.1+1` **sin uso previsto** |
+| Entorno local | JDK 17 Temurin (sistema) listo; Docker, Git, Node 22 e IntelliJ Ultimate listos. Maven vía wrapper (3.9.16). JDK 21 instalado en `C:\dev\jdks\jdk-21.0.12.1+1` **sin uso previsto** |
 
 ## Cómo gestionamos Jira
 
@@ -191,6 +191,8 @@ Navegador → Next.js → BFF ─┬→ consulta-service  (F01)
 - **Se verifica al crear el proyecto:** versiones de parche exactas, el mínimo de Java de Spring AI 1.1.x y la compatibilidad del
   conjunto con el plugin del generador.
 - **JDK 21:** queda instalado sin usarse. No estorba (no está en el `PATH`) y puede borrarse cuando se quiera.
+- - **Creación del proyecto (2026-10-06):** Spring Initializr ya no ofrece Spring Boot 3.5 (solo 4.x), así que el `pom.xml` se escribió a mano con `spring-boot-starter-parent` 3.5.16. Compila y pasa el test de contexto con Java 17.0.19.
+- **Maven:** se usa Maven Wrapper con Maven 3.9.16 (línea 3.9, que Spring Boot 3.5 usa y prueba).
 - **Reevaluar** solo si el curso permitiera o pidiera Spring Boot 4.
 
 ### D-05 · Proveedor del LLM y de embeddings — *R-06; todavía abierta*
@@ -285,7 +287,7 @@ Hechos técnicos relevantes:
 | B. Paquetes por función (`chat/`, `retrieval/`, `ingestion/`) | Cohesión por funcionalidad | No es la estructura pedida; se aparta del resto de features |
 
 - **Decisión:** **A**. Esto reemplaza mi propuesta anterior de paquetes por función.
-- **Estructura prevista** (el nombre del paquete raíz es provisional y se fija al crear el proyecto):
+- **Estructura prevista** (paquete raíz **fijado**: `com.oficinaagua.chatbot`; artefacto `chatbot-service`):
 
   ```
   com.oficinaagua.chatbot
@@ -381,3 +383,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-09 Abuso | Riesgo de diseño propuesto | Requisito confirmado; se reparte entre BFF y backend |
 | Preguntas a F01 y al profesor | Siete preguntas a F01 y tres al profesor | Reemplazadas: el contrato de F01 ya se conoce y no se necesita |
 | Supuestos S-01, S-03, S-04 anteriores | DTO/OpenAPI, ubicación de F01, alcance público | Resueltos por la clase y reemplazados por los de la sección 3 |
+| Paquete raíz y Maven (2026-10-06) | Nombre del paquete provisional; versión de Maven sin definir | Paquete `com.oficinaagua.chatbot`, artefacto `chatbot-service`; Maven Wrapper 3.9.16; `pom.xml` manual porque Initializr no ofrece Boot 3.5 |

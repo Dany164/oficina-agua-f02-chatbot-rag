@@ -21,3 +21,6 @@ spring:
         dimensions: 1024
         distance-type: COSINE_DISTANCE
         table-name: vector_store
+chatbot:
+  ingestion:
+    knowledge-path: ${KNOWLEDGE_PATH:../knowledge}

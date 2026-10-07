@@ -5,3 +5,19 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:chatbot}
     username: ${POSTGRES_USER:chatbot}
     password: ${POSTGRES_PASSWORD:}
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_CHAT_MODEL:qwen2.5:7b}
+          num-ctx: 4096
+      embedding:
+        options:
+          model: ${OLLAMA_EMBEDDING_MODEL:bge-m3}
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+        dimensions: 1024
+        distance-type: COSINE_DISTANCE
+        table-name: vector_store

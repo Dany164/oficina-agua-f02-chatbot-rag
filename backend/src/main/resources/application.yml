@@ -1,3 +1,7 @@
 spring:
   application:
     name: chatbot-service
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5433}/${POSTGRES_DB:chatbot}
+    username: ${POSTGRES_USER:chatbot}
+    password: ${POSTGRES_PASSWORD:}

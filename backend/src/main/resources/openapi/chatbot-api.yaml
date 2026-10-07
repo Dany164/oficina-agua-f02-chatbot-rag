@@ -1,0 +1,122 @@
+openapi: 3.0.3
+info:
+  title: Chatbot API (F02)
+  description: >
+    API pública del chatbot con RAG de la Oficina de Agua.
+    Responde solo con información institucional pública.
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+    description: Desarrollo local
+tags:
+  - name: chat
+    description: Conversación con el chatbot
+paths:
+  /api/v1/chat/messages:
+    post:
+      tags: [chat]
+      operationId: sendMessage
+      summary: Envía una pregunta al chatbot
+      description: >
+        Recupera fragmentos públicos relevantes y genera una respuesta basada en ellos.
+        Si no hay información suficiente, responde que no la tiene y devuelve la lista de fuentes vacía.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Respuesta generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Pregunta del usuario
+    ChatResponse:
+      type: object
+      required: [answer, sources]
+      properties:
+        answer:
+          type: string
+          description: Respuesta del chatbot
+        sources:
+          type: array
+          description: Fuentes de los fragmentos usados; vacía si no hubo información suficiente
+          items:
+            $ref: '#/components/schemas/Source'
+    Source:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          description: Nombre del documento o sección
+        documentId:
+          type: string
+          description: Identificador del documento en la base de conocimiento
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          description: Mensaje legible, sin detalles internos
+        details:
+          type: array
+          description: Detalle de validación por campo, si aplica
+          items:
+            type: string
+  responses:
+    BadRequest:
+      description: Solicitud inválida (mensaje vacío o demasiado largo)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Se superó el límite de solicitudes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: Error interno
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: Proveedor de LLM o base vectorial no disponible
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

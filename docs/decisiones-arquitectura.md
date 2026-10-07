@@ -252,9 +252,19 @@ Hechos técnicos relevantes:
 | B. Servicio separado | Aislamiento | Sobreingeniería para este tamaño |
 | C. Script externo | Independiente | Código fuera del proyecto y sin pruebas |
 
-- **Decisión:** **A**, como subpaquete `service/ingestion` separado del de consulta (`service/rag`, ver D-11), disparado por una acción administrativa **no expuesta por el BFF**
-  y de forma **idempotente** (si el hash del documento no cambió, no se reindexa). Documentos de prueba en Markdown, marcados como ficticios,
-  en `knowledge/`.
+- **Decisión:** **A**, como subpaquete `service/ingestion` separado del de consulta (`service/rag`, ver D-11). Implementación:
+  - **Disparo:** un `ApplicationRunner` que solo existe con el perfil `ingest`. No hay endpoint HTTP: así no se expone nada por el BFF,
+    no hay que autenticarlo y no entra al contrato OpenAPI. La aplicación termina al acabar la ingesta.
+  - **Troceo:** un chunk por sección `##` del Markdown (`MarkdownSectionSplitter`). El texto guardado es `Título - Sección` seguido del
+    contenido, para que el embedding capture el tema de la sección. *Recomendación nuestra*; descartado el corte por tamaño fijo porque
+    parte ideas por la mitad. Pendiente de revisar si algún documento crece más allá de lo que cabe en `num_ctx` (4096).
+  - **Metadatos por chunk:** `documentId`, `title`, `section`, `visibility=PUBLIC`, `contentHash`, `chunkIndex`. `visibility` es lo que
+    permitirá filtrar en el chatbot público (R-17).
+  - **Idempotencia:** tabla `knowledge_document` (migración V2) con el SHA-256 del contenido (saltos de línea normalizados). Hash igual: se omite.
+    Hash distinto o documento nuevo: se borran los chunks del documento por `documentId` y se reinsertan. El hash se registra al final,
+    de modo que una ejecución que falla a medias se reintenta completa.
+  - **Verificado:** 5 documentos → 16 chunks en `vector_store`; segunda ejecución → 0 ingeridos, 5 sin cambios, conteo intacto.
+    Spring AI (`PgVectorStore`) escribe y borra correctamente sobre la tabla creada por Flyway.
 - **Nota Contract-First:** si la acción administrativa es un endpoint HTTP, **también se define en el YAML** (D-02); si es un comando o
   una tarea interna, no.
 - **Reversibilidad:** alta.
@@ -391,3 +401,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | Preguntas a F01 y al profesor | Siete preguntas a F01 y tres al profesor | Reemplazadas: el contrato de F01 ya se conoce y no se necesita |
 | Supuestos S-01, S-03, S-04 anteriores | DTO/OpenAPI, ubicación de F01, alcance público | Resueltos por la clase y reemplazados por los de la sección 3 |
 | Paquete raíz y Maven (2026-10-06) | Nombre del paquete provisional; versión de Maven sin definir | Paquete `com.oficinaagua.chatbot`, artefacto `chatbot-service`; Maven Wrapper 3.9.16; `pom.xml` manual porque Initializr no ofrece Boot 3.5 |
+| D-08 Ingesta (2026-10-07) | Acción administrativa sin definir | Perfil `ingest` con `ApplicationRunner`, troceo por `##`, idempotencia con la tabla `knowledge_document` |

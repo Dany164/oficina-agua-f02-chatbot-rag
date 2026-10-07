@@ -51,33 +51,33 @@ como **recomendación** (no requisito), el título del Pull Request incluye `MOD
 
 Origen: indicaciones de clase (incluida la Clase 11), según lo reportado por el equipo.
 
-| ID | Requisito | Alcance en F02 |
-|---|---|---|
-| R-01 | F02 es un chatbot con RAG en la página pública | Directo |
-| R-02 | Next.js como BFF | Directo |
-| R-03 | Spring Boot como backend | Directo |
-| R-04 | Usar Spring AI | Directo |
-| R-05 | PostgreSQL + pgvector, base propia de F02 para el conocimiento del RAG | Directo |
-| R-06 | LLM: el profesor permite **AWS Bedrock, OpenAI u Ollama local** | Directo; proveedor aún sin cerrar (D-05) |
-| R-07 | Usar inyección de dependencias | Directo |
+| ID | Requisito | Alcance en F02                                                        |
+|---|---|-----------------------------------------------------------------------|
+| R-01 | F02 es un chatbot con RAG en la página pública | Directo                                                               |
+| R-02 | Next.js como BFF | Directo                                                               |
+| R-03 | Spring Boot como backend | Directo                                                               |
+| R-04 | Usar Spring AI | Directo                                                               |
+| R-05 | PostgreSQL + pgvector, base propia de F02 para el conocimiento del RAG | Directo                                                               |
+| R-06 | LLM: el profesor permite **AWS Bedrock, OpenAI u Ollama local** | Directo; proveedor elegido: Ollama en desarrollo (D-05).              |
+| R-07 | Usar inyección de dependencias | Directo                                                               |
 | R-08 | Usar FeignClient para consumir APIs de otros servicios | F02 **hoy no consume ninguna API**; aplica solo si aparece una (D-03) |
-| R-09 | Un repositorio por feature, en la cuenta personal del integrante | Directo |
-| R-10 | Tareas gestionadas en Jira (espacio MODA) | Directo |
-| R-11 | **Contract-First**: OpenAPI YAML → generación de código → Controller que implementa la interfaz generada; Service para la lógica y Repository para los datos | Directo (D-02) |
-| R-12 | El monolito heredado **no se modifica**; Fase 2 son servicios nuevos alrededor | Directo |
-| R-13 | Mantenerse alineados con la clase: **Spring Boot 3.5 y JDK 17** | Directo (D-04) |
-| R-14 | Los microservicios de Fase 2 **nunca** usan `ddl-auto: update`; no modifican el esquema del monolito | Directo (D-01) |
-| R-15 | F01 y F02 son independientes en datos y lógica; **F02 no necesita esperar a F01** para su desarrollo interno | Directo (D-03) |
-| R-16 | La relación principal entre F01 y F02 es la **página pública Next.js/BFF**. El navegador nunca habla directo con la BD ni con el proveedor del LLM | Directo (D-03) |
-| R-17 | El RAG público maneja **solo información institucional/curada**; nunca saldos, pagos, consumos, contratos ni datos personales | Directo (D-06) |
-| R-18 | Controles del chatbot público: longitud máxima de mensajes, rate limiting, costos del LLM, respuesta sin contexto suficiente, alucinaciones | Directo (D-09, D-07) |
-| R-19 | La API key del proveedor, si es externo, vive **solo en backend** | Directo |
-| R-20 | Arquitectura RAG: ingesta (extracción, limpieza, chunking, metadata, embeddings, pgvector) y consulta (embedding de la pregunta, búsqueda semántica, Top-K, threshold de similitud, contexto, prompt, LLM); el prompt obliga a responder con el contexto y permite "no tengo información suficiente" | Directo (D-07, D-08) |
-| R-21 | El historial de conversaciones **puede** registrarse de forma asíncrona en Amazon DynamoDB | **Opcional** y de etapa tardía (D-12) |
-| R-22 | Arquitectura **por capas** (Controller → Service → Repository), con Java 17, Spring Boot 3.5, Maven y OpenAPI | Directo (D-11) |
-| R-23 | Errores con `@RestControllerAdvice`: respuestas consistentes y **sin exponer stack traces** | Directo (D-11) |
-| R-24 | Git: `main` estable; ramas como `feature/f02-project-setup`; commits pequeños y de una sola tarea, con formato `tipo(f02): descripción` | Directo (D-10) |
-| R-25 | F02 **no se acopla** a la base de datos de F01 ni directamente a F01 | Directo (D-01, D-03) |
+| R-09 | Un repositorio por feature, en la cuenta personal del integrante | Directo                                                               |
+| R-10 | Tareas gestionadas en Jira (espacio MODA) | Directo                                                               |
+| R-11 | **Contract-First**: OpenAPI YAML → generación de código → Controller que implementa la interfaz generada; Service para la lógica y Repository para los datos | Directo (D-02)                                                        |
+| R-12 | El monolito heredado **no se modifica**; Fase 2 son servicios nuevos alrededor | Directo                                                               |
+| R-13 | Mantenerse alineados con la clase: **Spring Boot 3.5 y JDK 17** | Directo (D-04)                                                        |
+| R-14 | Los microservicios de Fase 2 **nunca** usan `ddl-auto: update`; no modifican el esquema del monolito | Directo (D-01)                                                        |
+| R-15 | F01 y F02 son independientes en datos y lógica; **F02 no necesita esperar a F01** para su desarrollo interno | Directo (D-03)                                                        |
+| R-16 | La relación principal entre F01 y F02 es la **página pública Next.js/BFF**. El navegador nunca habla directo con la BD ni con el proveedor del LLM | Directo (D-03)                                                        |
+| R-17 | El RAG público maneja **solo información institucional/curada**; nunca saldos, pagos, consumos, contratos ni datos personales | Directo (D-06)                                                        |
+| R-18 | Controles del chatbot público: longitud máxima de mensajes, rate limiting, costos del LLM, respuesta sin contexto suficiente, alucinaciones | Directo (D-09, D-07)                                                  |
+| R-19 | La API key del proveedor, si es externo, vive **solo en backend** | Directo                                                               |
+| R-20 | Arquitectura RAG: ingesta (extracción, limpieza, chunking, metadata, embeddings, pgvector) y consulta (embedding de la pregunta, búsqueda semántica, Top-K, threshold de similitud, contexto, prompt, LLM); el prompt obliga a responder con el contexto y permite "no tengo información suficiente" | Directo (D-07, D-08)                                                  |
+| R-21 | El historial de conversaciones **puede** registrarse de forma asíncrona en Amazon DynamoDB | **Opcional** y de etapa tardía (D-12)                                 |
+| R-22 | Arquitectura **por capas** (Controller → Service → Repository), con Java 17, Spring Boot 3.5, Maven y OpenAPI | Directo (D-11)                                                        |
+| R-23 | Errores con `@RestControllerAdvice`: respuestas consistentes y **sin exponer stack traces** | Directo (D-11)                                                        |
+| R-24 | Git: `main` estable; ramas como `feature/f02-project-setup`; commits pequeños y de una sola tarea, con formato `tipo(f02): descripción` | Directo (D-10)                                                        |
+| R-25 | F02 **no se acopla** a la base de datos de F01 ni directamente a F01 | Directo (D-01, D-03)                                                  |
 
 **Datos de la Clase 11 que no corresponden a F02** (se anotan para no confundirlos):
 - El contrato inicial de F01 es `GET /api/v1/public/accounts/{meterCode}` con respuestas 200, 400, 404 y 429,
@@ -196,7 +196,6 @@ Navegador → Next.js → BFF ─┬→ consulta-service  (F01)
 - **Reevaluar** solo si el curso permitiera o pidiera Spring Boot 4.
 
 ### D-05 · Proveedor del LLM y de embeddings — *R-06; todavía abierta*
-
 Hechos técnicos relevantes:
 - La **dimensión del vector** la fija el modelo de embeddings; cambiarlo obliga a reindexar todo.
 - Spring AI abstrae el proveedor (OpenAI, Bedrock y Ollama tienen soporte documentado de chat y embeddings); cambiarlo es sobre
@@ -209,14 +208,21 @@ Hechos técnicos relevantes:
 | B. AWS Bedrock | Permitido por el profesor; opciones de modelos en un solo servicio | Requiere cuenta y credenciales de AWS; más configuración; costo por uso |
 | C. Ollama local | Sin costo ni clave; los datos no salen de la máquina; sirve para demo sin internet | Requiere hardware suficiente; modelos pequeños dan respuestas de menor calidad; más lento |
 
-- **Decisión:** **no cerrarla todavía**, como indicaste. Lo único que se fija ya: el proveedor se mantiene **desacoplado**
-  (configurable por propiedades y por perfil) y la clave vive solo en backend.
-- **Cuándo es necesario cerrarla:** **antes de crear el esquema vectorial** (etapa de ingesta), porque el modelo de embeddings
-  fija la dimensión del vector. Las etapas anteriores no dependen de esto.
-- **Criterio sugerido para decidir entonces:** si tu equipo soporta Ollama con un modelo aceptable, C para desarrollo (sin costos
-  ni claves). Si no, A. Bedrock solo si ya existe una cuenta de AWS accesible.
-- **A verificar en su momento:** nombres de modelos, dimensiones de embeddings y límites de uso del proveedor elegido.
+- **Decisión (2026-10-07):** **C, Ollama local, para desarrollo**, con el proveedor **desacoplado** (configurable por propiedades y
+  por perfil). Si otro proveedor requiriera clave, vive solo en backend. Bedrock u OpenAI quedan como cambio posible
+  (configuración más reindexado). Gemini **no se considera**: no está entre los proveedores permitidos por el profesor.
+- **Hardware verificado:** 16 GB de RAM; GPU NVIDIA RTX 3050 con 4 GB de VRAM dedicada.
+- **Modelos probados en esta máquina (provisionales):**
 
+  | Uso | Modelo | Resultado |
+    |---|---|---|
+  | Embeddings | `bge-m3` | Dimensión **1024** (verificada con `ollama show`) |
+  | Chat (por defecto) | `qwen2.5:7b` | 5.1 GB, 55% CPU / 45% GPU; respuesta rápida y correcta en español en una prueba simple |
+  | Chat (alternativa) | `qwen2.5:3b` | 2.2 GB, 100% GPU |
+
+- **Consecuencia:** el esquema vectorial usa `vector(1024)`. Cambiar de modelo de embeddings exige una nueva migración y reindexar.
+- **A reevaluar:** velocidad y calidad con prompts RAG reales, el contexto por defecto de Ollama (4096 tokens, el prompt no debe
+  superarlo) y el consumo de RAM junto con Docker e IntelliJ.
 ### D-06 · Alcance de información del chatbot — **confirmado por la clase (R-17)**
 
 - **Solo información institucional/curada:** horarios, requisitos, procedimientos, tarifas públicas, preguntas frecuentes,
@@ -378,6 +384,7 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-04 Versiones | Spring Boot 4.1 + Spring AI 2.0 + JDK 21 | **Spring Boot 3.5 + Spring AI 1.1.x + JDK 17**, alineado con la clase |
 | D-03 F01 | Interfaz `ConsultaPublicaGateway` con stub y adaptador Feign | F01 y F02 son independientes; **sin Feign en F02** por ahora; la relación es la página pública (BFF) |
 | D-05 Proveedor | Candidatos OpenAI y Google GenAI; Ollama "no cuenta como externo" | Candidatos **Bedrock, OpenAI, Ollama** (permitidos por el profesor); Ollama sí es válido; decisión aún abierta |
+| D-05 Proveedor (2026-10-07) | Decisión abierta | Resuelta: Ollama en desarrollo; embeddings `bge-m3` (1024); chat `qwen2.5:7b` provisional con `qwen2.5:3b` como alternativa; Gemini descartado por no estar entre los proveedores permitidos |
 | D-10 Estructura | Carpeta `api/` en la raíz | Sin `api/`: el YAML va dentro de `backend/` (provisional) |
 | D-06 Alcance | Decisión nuestra | Requisito confirmado por la clase |
 | D-09 Abuso | Riesgo de diseño propuesto | Requisito confirmado; se reparte entre BFF y backend |

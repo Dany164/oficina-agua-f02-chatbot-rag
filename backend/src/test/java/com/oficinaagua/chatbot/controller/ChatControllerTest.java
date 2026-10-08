@@ -163,4 +163,24 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.message").value("Ocurrio un error interno."))
                 .andExpect(content().string(not(containsString("detalle secreto"))));
     }
+
+    @Test
+    void blankMessage_returns400WithErrorResponse() throws Exception {
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"   \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.details[0]").value(containsString("message")));
+    }
+
+    @Test
+    void messageWithLineBreaks_returns200() throws Exception {
+        when(ragService.answer(anyString())).thenReturn(new RagAnswer("ok", List.of()));
+
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"Hola\\nmundo\"}"))
+                .andExpect(status().isOk());
+    }
 }

@@ -51,7 +51,8 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-          description: Pregunta del usuario
+          pattern: '[\s\S]*\S[\s\S]*'
+          description: Pregunta del usuario (no puede estar en blanco)
     ChatResponse:
       type: object
       required: [answer, sources]
@@ -97,7 +98,7 @@ components:
             type: string
   responses:
     BadRequest:
-      description: Solicitud inválida (mensaje vacío o demasiado largo)
+      description: Solicitud inválida (mensaje vacío, en blanco o demasiado largo)
       content:
         application/json:
           schema:

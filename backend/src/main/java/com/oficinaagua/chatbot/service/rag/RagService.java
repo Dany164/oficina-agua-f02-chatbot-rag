@@ -1,0 +1,93 @@
+package com.oficinaagua.chatbot.service.rag;
+
+import com.oficinaagua.chatbot.exception.AiServiceUnavailableException;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.retry.NonTransientAiException;
+import org.springframework.ai.retry.TransientAiException;
+import org.springframework.dao.DataAccessException;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
+
+import java.util.Locale;
+
+/**
+ * Flujo de consulta del RAG: recuperar -> (si no hay nada, responder sin LLM) -> prompt -> generar.
+ */
+@Service
+public class RagService {
+
+    private static final Logger log = LoggerFactory.getLogger(RagService.class);
+
+    private final KnowledgeRetriever retriever;
+    private final RagPromptBuilder promptBuilder;
+    private final AnswerGenerator answerGenerator;
+
+    public RagService(KnowledgeRetriever retriever, RagPromptBuilder promptBuilder,
+                      AnswerGenerator answerGenerator) {
+        this.retriever = retriever;
+        this.promptBuilder = promptBuilder;
+        this.answerGenerator = answerGenerator;
+    }
+
+    /** Punto de entrada. Traduce los fallos de infraestructura (LLM, base vectorial) a un error propio. */
+    public RagAnswer answer(String question) {
+        try {
+            return generateAnswer(question);
+        } catch (TransientAiException | NonTransientAiException
+                 | ResourceAccessException | DataAccessException ex) {
+            throw new AiServiceUnavailableException(
+                    "Proveedor de LLM o base vectorial no disponible", ex);
+        }
+    }
+
+    private RagAnswer generateAnswer(String question) {
+        List<Document> chunks = retriever.retrieve(question);
+        if (chunks.isEmpty()) {
+            log.info("Sin fragmentos relevantes: se responde sin llamar al LLM");
+            return noInformation();
+        }
+
+        String answer = answerGenerator.generate(promptBuilder.build(question, chunks));
+        if (answer == null || answer.isBlank()) {
+            log.warn("El LLM no devolvió texto: se responde que no hay información");
+            return noInformation();
+        }
+        if (isNoInformation(answer)) {
+            log.info("El LLM indicó que el contexto no alcanza: se responde sin fuentes");
+            return noInformation();
+        }
+        return new RagAnswer(answer.strip(), toSources(chunks));
+    }
+
+    private RagAnswer noInformation() {
+        return new RagAnswer(RagPromptBuilder.NO_INFORMATION_ANSWER, List.of());
+    }
+
+    /** El LLM señala "sin información" con una palabra clave; se tolera mayúsculas y signos alrededor. */
+    private boolean isNoInformation(String answer) {
+        return answer.toUpperCase(Locale.ROOT).contains(RagPromptBuilder.NO_INFORMATION_MARKER);
+    }
+
+    private List<RagSource> toSources(List<Document> chunks) {
+        return chunks.stream()
+                .map(chunk -> new RagSource(sourceTitle(chunk), metadata(chunk, "documentId")))
+                .toList();
+    }
+
+    private String sourceTitle(Document chunk) {
+        String title = metadata(chunk, "title");
+        String section = metadata(chunk, "section");
+        if (title.isEmpty()) {
+            return section;
+        }
+        return section.isEmpty() ? title : title + " - " + section;
+    }
+
+    private String metadata(Document chunk, String key) {
+        Object value = chunk.getMetadata().get(key);
+        return value == null ? "" : value.toString();
+    }
+}

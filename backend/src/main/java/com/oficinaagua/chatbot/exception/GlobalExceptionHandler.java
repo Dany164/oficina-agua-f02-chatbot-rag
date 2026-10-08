@@ -46,6 +46,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(buildBody(statusCode, message, List.of()));
     }
 
+    /** LLM o base vectorial caídos: 503 con mensaje genérico; la causa queda solo en el log. */
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    public ResponseEntity<Object> handleAiUnavailable(AiServiceUnavailableException ex) {
+        log.error("Servicio de IA no disponible", ex);
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(status)
+                .body(buildBody(status,
+                        "El servicio no esta disponible temporalmente. Intenta de nuevo mas tarde.",
+                        List.of()));
+    }
+
     /** Cualquier error no previsto: 500 genérico. El detalle queda solo en el log del servidor. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleUnexpected(Exception ex) {

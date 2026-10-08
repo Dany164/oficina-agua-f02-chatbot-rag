@@ -10,7 +10,7 @@ spring:
       base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
       chat:
         options:
-          model: ${OLLAMA_CHAT_MODEL:qwen2.5:7b}
+          model: ${OLLAMA_CHAT_MODEL:qwen2.5:3b}
           num-ctx: 4096
       embedding:
         options:
@@ -24,3 +24,7 @@ spring:
 chatbot:
   ingestion:
     knowledge-path: ${KNOWLEDGE_PATH:../knowledge}
+  rag:
+    top-k: ${RAG_TOP_K:4}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.55}
+    max-context-chars: ${RAG_MAX_CONTEXT_CHARS:6000}

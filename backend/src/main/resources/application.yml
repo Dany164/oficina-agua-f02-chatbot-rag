@@ -27,3 +27,4 @@ chatbot:
   rag:
     top-k: ${RAG_TOP_K:4}
     similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.5}
+    max-context-chars: ${RAG_MAX_CONTEXT_CHARS:6000}

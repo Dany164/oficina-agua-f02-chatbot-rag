@@ -24,3 +24,6 @@ spring:
 chatbot:
   ingestion:
     knowledge-path: ${KNOWLEDGE_PATH:../knowledge}
+  rag:
+    top-k: ${RAG_TOP_K:4}
+    similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.5}

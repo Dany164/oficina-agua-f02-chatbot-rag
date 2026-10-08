@@ -15,7 +15,7 @@
 | `MODA-1` | Por hacer, sin asignar, informador: Dany Mateo. Representa la feature F02; **no se duplica** |
 | Historias, subtareas y sprints de F02 | **Ninguno creado todavía**, a propósito |
 | Repositorio | `github.com/Dany164/oficina-agua-f02-chatbot-rag`, **privado** durante el desarrollo; público solo si el curso lo exige |
-| Trabajo en Git | `main` contiene la estructura inicial, la documentación, el esqueleto Spring Boot de `backend/` y el Maven Wrapper (PR #1 y #2 fusionados). Siguiente rama: `feature/f02-openapi-contract` |
+| Trabajo en Git | `main` contiene la base del backend, ingesta de documentos y consulta RAG (PR #1 a #11 fusionados). Rama en curso: `feature/f02-rate-limiting` |
 | Integración GitHub–Jira | No asumida; se verifica cuando corresponda |
 | Grupo | Es el mismo que desarrolló el monolito en la Fase 1: conocemos el sistema y su base de datos |
 | Regla principal de Fase 2 | **El monolito heredado NO se modifica.** Todo es servicio nuevo alrededor de él |
@@ -277,6 +277,7 @@ Hechos técnicos relevantes:
   suficiente y mitigación de alucinaciones.
 - **Dónde se aplican (diseño nuestro):** rate limiting y validación de forma en el BFF, para no gastar recursos del backend; validación
   definitiva en `chatbot-service`, que declara los límites en el YAML y los aplica con Bean Validation (`useBeanValidation=true`).
+- **Rate limiting en el backend:** implementado; ver D-14.
 - **CAPTCHA:** no se pidió para F02 (es de F01). Queda como mejora opcional.
 - **Reversibilidad:** alta.
 
@@ -407,6 +408,42 @@ Solo los fallos de infraestructura se traducen a 503; un bug real sigue siendo 5
 
 **f) Verificación** (2026-10-08): pruebas manuales con Ollama real (`qwen2.5:3b` y `bge-m3`, 100% GPU) y PostgreSQL;
 respuestas con fuentes, respuesta sin LLM por umbral, negativa por palabra clave, 400 por mensaje en blanco.
+
+### D-14 · Rate limiting del chatbot — *implementa D-09 (R-18)*
+
+La Clase 11 exige rate limiting y límite de longitud del mensaje (R-18). El resto del diseño es decisión nuestra.
+
+**a) Cómo se implementa el límite** *(decisión nuestra)*
+
+| Alternativa | Ventajas | Desventajas |
+|---|---|---|
+| Clase propia: ventana fija por cliente en `ConcurrentHashMap` | Unas 40 líneas legibles, sin dependencias, fácil de probar con un `Clock` inyectado | Permite ráfagas en el borde de la ventana; el estado no se comparte entre instancias |
+| Bucket4j (token bucket) | Estándar conocido, algoritmo más fino | Dependencia nueva que versionar; con una sola instancia no aporta más que la opción anterior |
+| Redis o API gateway | Escala a varias instancias | Sobreingeniería para el alcance de F02 |
+
+**Decisión:** clase propia (`ratelimit/RateLimiter`).
+
+**b) Parámetros** *(recomendación)*: 10 peticiones por cliente cada 60 segundos, configurables con `RATE_LIMIT_MAX_REQUESTS` y
+`RATE_LIMIT_WINDOW_SECONDS`. Con el modelo local tardando entre 1 y 10 s por respuesta, 10 por minuto cubre el uso humano normal.
+
+**c) Dónde se engancha:** un `HandlerInterceptor` (`RateLimitInterceptor`) registrado solo sobre `/api/v1/chat/**`
+(`RateLimitConfig`). Lanza `RateLimitExceededException`, y el `GlobalExceptionHandler` la convierte en **429** con el mismo
+`ErrorResponseDto`, mensaje genérico y la cabecera `Retry-After` (segundos). El límite se aplica **antes** de validar el cuerpo, así
+que los mensajes inválidos también cuentan.
+
+**d) Identificación del cliente:** IP de la conexión (`getRemoteAddr()`). Detrás del BFF de Next.js el backend verá la IP del BFF;
+en la rama del BFF habrá que leer `X-Forwarded-For`, y solo si una propiedad lo habilita (la cabecera es falsificable).
+
+**e) Limitaciones conocidas**
+
+- El estado vive en memoria: solo vale con una instancia del backend; con varias habría que mover el contador a Redis.
+- Ventana fija: un cliente puede hacer hasta 2 × el máximo alrededor del cambio de ventana.
+- Hasta que exista el BFF, todos los usuarios que lleguen a través de él compartirían una misma IP y un mismo contador.
+- Las ventanas expiradas se purgan solo cuando el mapa supera 10 000 claves.
+
+**f) Verificación** (2026-10-08): 65 tests en verde (5 del limitador con reloj manual, 3 de MVC con límite 2). Prueba real con el
+servidor: 12 peticiones seguidas devuelven 10 × `400` y 2 × `429`; la respuesta 429 incluye `Retry-After` y no expone detalles.
+El test web detectó un error durante el desarrollo: usar la URI en lugar de la IP como clave convertía el límite en uno global.
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -471,3 +508,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-08 Ingesta (2026-10-07) | Acción administrativa sin definir | Perfil `ingest` con `ApplicationRunner`, troceo por `##`, idempotencia con la tabla `knowledge_document` |
 | D-05 Modelo de chat (2026-10-08) | `qwen2.5:7b` por defecto | `qwen2.5:3b` por defecto: el 7b no cabe en 4 GB de VRAM (D-13) |
 | D-07 Flujo RAG (2026-10-08) | Diseño propuesto | Implementado y calibrado; umbral 0.55; negativa por palabra clave (D-13) |
+| D-09 Rate limiting (2026-10-08) | Límite previsto en BFF y backend | Backend implementado: ventana fija en memoria por IP, 10 peticiones/min, 429 con `Retry-After` (D-14); el BFF aplicará el suyo después |

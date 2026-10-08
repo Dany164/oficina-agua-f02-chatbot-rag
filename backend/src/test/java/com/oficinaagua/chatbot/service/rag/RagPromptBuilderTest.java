@@ -22,7 +22,7 @@ class RagPromptBuilderTest {
 
         assertThat(prompt.systemMessage())
                 .contains("EXCLUSIVAMENTE")
-                .contains(RagPromptBuilder.NO_INFORMATION_ANSWER)
+                .contains(RagPromptBuilder.NO_INFORMATION_MARKER)
                 .contains("Horario: lunes a viernes de 8:00 a 16:00.")
                 .contains("Teléfono: 5555-0100.");
     }

@@ -102,15 +102,27 @@ class RagServiceTest {
         assertThat(result.sources()).isEmpty();
     }
 
-    @Test
-    void dropsTheSourcesWhenTheLlmItselfSaysThereIsNoInformation() {
+    @ParameterizedTest
+    @ValueSource(strings = {"SIN_INFORMACION", "sin_informacion", "SIN_INFORMACION.", "  SIN_INFORMACION\n"})
+    void answersThereIsNoInformationWhenTheLlmReturnsTheMarker(String llmText) {
         when(retriever.retrieve(QUESTION)).thenReturn(List.of(scheduleChunk()));
-        when(answerGenerator.generate(any(RagPrompt.class)))
-                .thenReturn(RagPromptBuilder.NO_INFORMATION_ANSWER);
+        when(answerGenerator.generate(any(RagPrompt.class))).thenReturn(llmText);
 
         RagAnswer result = service.answer(QUESTION);
 
         assertThat(result.answer()).isEqualTo(RagPromptBuilder.NO_INFORMATION_ANSWER);
         assertThat(result.sources()).isEmpty();
+    }
+
+    @Test
+    void asksTheLlmToUseTheMarkerWhenTheContextIsNotEnough() {
+        when(retriever.retrieve(QUESTION)).thenReturn(List.of(scheduleChunk()));
+        when(answerGenerator.generate(any(RagPrompt.class))).thenReturn("Respuesta");
+
+        service.answer(QUESTION);
+
+        verify(answerGenerator).generate(promptCaptor.capture());
+        assertThat(promptCaptor.getValue().systemMessage())
+                .contains(RagPromptBuilder.NO_INFORMATION_MARKER);
     }
 }

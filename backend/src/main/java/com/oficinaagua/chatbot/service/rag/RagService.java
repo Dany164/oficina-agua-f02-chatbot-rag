@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.stereotype.Service;
+import java.util.Locale;
 
 /**
  * Flujo de consulta del RAG: recuperar -> (si no hay nada, responder sin LLM) -> prompt -> generar.
@@ -37,14 +38,20 @@ public class RagService {
             log.warn("El LLM no devolvió texto: se responde que no hay información");
             return noInformation();
         }
-        if (answer.contains(RagPromptBuilder.NO_INFORMATION_ANSWER)) {
-            return new RagAnswer(answer.strip(), List.of()); // no se citan fuentes si no se pudo responder
+        if (isNoInformation(answer)) {
+            log.info("El LLM indicó que el contexto no alcanza: se responde sin fuentes");
+            return noInformation();
         }
         return new RagAnswer(answer.strip(), toSources(chunks));
     }
 
     private RagAnswer noInformation() {
         return new RagAnswer(RagPromptBuilder.NO_INFORMATION_ANSWER, List.of());
+    }
+
+    /** El LLM señala "sin información" con una palabra clave; se tolera mayúsculas y signos alrededor. */
+    private boolean isNoInformation(String answer) {
+        return answer.toUpperCase(Locale.ROOT).contains(RagPromptBuilder.NO_INFORMATION_MARKER);
     }
 
     private List<RagSource> toSources(List<Document> chunks) {

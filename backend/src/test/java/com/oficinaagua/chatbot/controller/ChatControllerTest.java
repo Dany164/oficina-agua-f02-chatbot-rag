@@ -10,6 +10,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.oficinaagua.chatbot.exception.AiServiceUnavailableException;
+
+
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -20,6 +23,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(ChatController.class)
 class ChatControllerTest {
@@ -129,5 +134,33 @@ class ChatControllerTest {
         mockMvc.perform(get(URL))
                 .andExpect(status().isMethodNotAllowed())
                 .andExpect(jsonPath("$.status").value(405));
+    }
+
+    @Test
+    void aiServiceDown_returns503WithGenericErrorResponse() throws Exception {
+        when(ragService.answer(anyString()))
+                .thenThrow(new AiServiceUnavailableException("ollama caido", new RuntimeException("detalle interno")));
+
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"Hola\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(503))
+                .andExpect(jsonPath("$.message").value(
+                        "El servicio no esta disponible temporalmente. Intenta de nuevo mas tarde."))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
+    }
+
+    @Test
+    void unexpectedError_returns500WithoutInternalDetails() throws Exception {
+        when(ragService.answer(anyString())).thenThrow(new IllegalStateException("detalle secreto"));
+
+        mockMvc.perform(post(URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"Hola\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.message").value("Ocurrio un error interno."))
+                .andExpect(content().string(not(containsString("detalle secreto"))));
     }
 }

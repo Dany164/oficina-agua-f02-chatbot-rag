@@ -1,10 +1,16 @@
 package com.oficinaagua.chatbot.service.rag;
 
+import com.oficinaagua.chatbot.exception.AiServiceUnavailableException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.retry.NonTransientAiException;
+import org.springframework.ai.retry.TransientAiException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
+
 import java.util.Locale;
 
 /**
@@ -26,7 +32,18 @@ public class RagService {
         this.answerGenerator = answerGenerator;
     }
 
+    /** Punto de entrada. Traduce los fallos de infraestructura (LLM, base vectorial) a un error propio. */
     public RagAnswer answer(String question) {
+        try {
+            return generateAnswer(question);
+        } catch (TransientAiException | NonTransientAiException
+                 | ResourceAccessException | DataAccessException ex) {
+            throw new AiServiceUnavailableException(
+                    "Proveedor de LLM o base vectorial no disponible", ex);
+        }
+    }
+
+    private RagAnswer generateAnswer(String question) {
         List<Document> chunks = retriever.retrieve(question);
         if (chunks.isEmpty()) {
             log.info("Sin fragmentos relevantes: se responde sin llamar al LLM");

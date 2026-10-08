@@ -19,6 +19,10 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.retry.TransientAiException;
+import org.springframework.web.client.ResourceAccessException;
+import com.oficinaagua.chatbot.exception.AiServiceUnavailableException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @ExtendWith(MockitoExtension.class)
 class RagServiceTest {
@@ -124,5 +128,31 @@ class RagServiceTest {
         verify(answerGenerator).generate(promptCaptor.capture());
         assertThat(promptCaptor.getValue().systemMessage())
                 .contains(RagPromptBuilder.NO_INFORMATION_MARKER);
+    }
+
+    @Test
+    void translatesRetrievalInfrastructureFailuresToServiceUnavailable() {
+        when(retriever.retrieve(QUESTION)).thenThrow(new TransientAiException("ollama caido"));
+
+        assertThatThrownBy(() -> service.answer(QUESTION))
+                .isInstanceOf(AiServiceUnavailableException.class);
+    }
+
+    @Test
+    void translatesLlmConnectionFailuresToServiceUnavailable() {
+        when(retriever.retrieve(QUESTION)).thenReturn(List.of(scheduleChunk()));
+        when(answerGenerator.generate(any(RagPrompt.class)))
+                .thenThrow(new ResourceAccessException("connection refused"));
+
+        assertThatThrownBy(() -> service.answer(QUESTION))
+                .isInstanceOf(AiServiceUnavailableException.class);
+    }
+
+    @Test
+    void doesNotHideUnexpectedBugsAsServiceUnavailable() {
+        when(retriever.retrieve(QUESTION)).thenThrow(new IllegalStateException("bug"));
+
+        assertThatThrownBy(() -> service.answer(QUESTION))
+                .isInstanceOf(IllegalStateException.class);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 import com.oficinaagua.chatbot.exception.AiServiceUnavailableException;
 
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(ChatController.class)
+@TestPropertySource(properties = "chatbot.rate-limit.max-requests=1000")
 class ChatControllerTest {
 
     private static final String URL = "/api/v1/chat/messages";

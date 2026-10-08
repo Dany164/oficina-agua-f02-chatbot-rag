@@ -29,8 +29,10 @@ public class RagPromptBuilder {
 
             Reglas:
             1. Responde en español, de forma breve y clara.
-            2. Usa solo datos que aparezcan en el CONTEXTO. No inventes montos, horarios, \
-            teléfonos, requisitos ni plazos.
+            2. Usa solo datos que aparezcan en el CONTEXTO. No inventes montos, horarios, \\
+            teléfonos, requisitos ni plazos. Si el CONTEXTO da varios montos, tramos o \\
+            condiciones sobre lo preguntado (por ejemplo un cargo fijo y cargos adicionales), \\
+            menciónalos todos.
             3. Si el CONTEXTO no contiene la respuesta, responde únicamente con la palabra \
             %s y nada más.
             4. Si la pregunta pide datos personales o de una cuenta (saldos, pagos, consumos, \

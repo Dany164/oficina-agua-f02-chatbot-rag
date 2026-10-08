@@ -23,7 +23,8 @@ Navegador → Next.js (BFF) → Spring Boot + Spring AI → PostgreSQL + pgvecto
 - JDK 17, Node.js 22 y Docker Desktop. Docker debe estar abierto también para correr
   los tests del backend (usan Testcontainers con PostgreSQL + pgvector).
 - [Ollama](https://ollama.com) instalado en el equipo, con los modelos descargados:
-  `ollama pull bge-m3` (embeddings) y `ollama pull qwen2.5:7b` (chat; alternativa más ligera: `qwen2.5:3b`).
+  `ollama pull bge-m3` (embeddings) y `ollama pull qwen2.5:3b` (chat). En equipos con más de 4 GB de VRAM
+  se puede usar `qwen2.5:7b` definiendo `OLLAMA_CHAT_MODEL`.
 
 ## Configuración
 
@@ -38,8 +39,11 @@ El backend lee estas variables de entorno (solo `POSTGRES_PASSWORD` es obligator
 | `POSTGRES_DB` / `POSTGRES_USER` | `chatbot` / `chatbot` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` |
 | `OLLAMA_EMBEDDING_MODEL` | `bge-m3` |
-| `OLLAMA_CHAT_MODEL` | `qwen2.5:7b` |
+| `OLLAMA_CHAT_MODEL` | `qwen2.5:3b` |
 | `KNOWLEDGE_PATH` | `../knowledge` (relativa a `backend/`) |
+| `RAG_TOP_K` | `4` |
+| `RAG_SIMILARITY_THRESHOLD` | `0.55` (por debajo, el fragmento se descarta) |
+| `RAG_MAX_CONTEXT_CHARS` | `6000` |
 
 ## Cómo ejecutar (desarrollo)
 
@@ -63,11 +67,32 @@ Los documentos de `knowledge/` se convierten en embeddings y se guardan en pgvec
 La aplicación procesa los documentos y termina sola. La ingesta es idempotente: un documento
 cuyo contenido no cambió se omite (no se vuelve a llamar a Ollama), y uno modificado reemplaza sus chunks.
 
+### Probar el chat
+
+Con la base cargada, arranca el backend (el puerto 8080 debe estar libre):
+
+```bash
+./mvnw spring-boot:run
+```
+
+Y desde otra terminal:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/chat/messages \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Cual es el horario de atencion?"}'
+```
+
+La respuesta trae `answer` y `sources`. Si la pregunta no se relaciona con la base de conocimiento, el chatbot responde
+que no tiene información suficiente y `sources` viene vacío. La primera consulta tarda más porque Ollama carga los modelos.
+
+Códigos de error: `400` (mensaje vacío, en blanco o de más de 500 caracteres) y `503` (Ollama o PostgreSQL no disponibles).
+
 ## Estado
 
 En desarrollo.
 
-- Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores,
-  PostgreSQL + pgvector con Flyway, integración con Ollama e ingesta de documentos.
-- Pendiente: flujo de consulta RAG, protección del chat (límite de mensajes y rate limiting),
-  interfaz y BFF en Next.js.
+- Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
+  integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
+  límite de longitud del mensaje, errores 400, 503 y 500).
+- Pendiente: rate limiting (429), interfaz y BFF en Next.js, Dockerización del backend e historial en DynamoDB (opcional).

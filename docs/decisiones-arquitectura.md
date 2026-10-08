@@ -195,7 +195,7 @@ Navegador → Next.js → BFF ─┬→ consulta-service  (F01)
 - **Maven:** se usa Maven Wrapper con Maven 3.9.16 (línea 3.9, que Spring Boot 3.5 usa y prueba).
 - **Reevaluar** solo si el curso permitiera o pidiera Spring Boot 4.
 
-### D-05 · Proveedor del LLM y de embeddings — *R-06; todavía abierta*
+### D-05 · Proveedor del LLM y de embeddings — *R-06; decidida (2026-10-07)*
 Hechos técnicos relevantes:
 - La **dimensión del vector** la fija el modelo de embeddings; cambiarlo obliga a reindexar todo.
 - Spring AI abstrae el proveedor (OpenAI, Bedrock y Ollama tienen soporte documentado de chat y embeddings); cambiarlo es sobre
@@ -217,11 +217,12 @@ Hechos técnicos relevantes:
   | Uso | Modelo | Resultado |
     |---|---|---|
   | Embeddings | `bge-m3` | Dimensión **1024** (verificada con `ollama show`) |
-  | Chat (por defecto) | `qwen2.5:7b` | 5.1 GB, 55% CPU / 45% GPU; respuesta rápida y correcta en español en una prueba simple |
-  | Chat (alternativa) | `qwen2.5:3b` | 2.2 GB, 100% GPU |
+  | Chat (por defecto) | `qwen2.5:3b` | 2.2 GB, 100% GPU en una RTX 3050 de 4 GB (ver D-13) |
+  | Chat (equipos con más VRAM) | `qwen2.5:7b` | 5.1 GB; en 4 GB de VRAM Ollama falló al cargarlo (`CUDA error`) |
 
 - **Consecuencia:** el esquema vectorial usa `vector(1024)`. Cambiar de modelo de embeddings exige una nueva migración y reindexar.
-- **A reevaluar:** velocidad y calidad con prompts RAG reales, el contexto por defecto de Ollama (4096 tokens, el prompt no debe
+- **Evaluado (2026-10-08):** velocidad y calidad con prompts RAG reales, en D-13. El contexto del prompt se limita a 6000 caracteres
+  (unos 1500 a 2000 tokens, estimación) para quedar dentro de los 4096 tokens de contexto de Ollama.
   superarlo) y el consumo de RAM junto con Docker e IntelliJ.
 ### D-06 · Alcance de información del chatbot — **confirmado por la clase (R-17)**
 
@@ -243,6 +244,7 @@ Hechos técnicos relevantes:
 - **Decisión:** **B**, usando de Spring AI el `VectorStore`, el modelo de embeddings y el `ChatClient`. Podemos comparar con el advisor después.
 - **Justificación defendible:** el objetivo es demostrar que hay RAG y controlar alucinaciones. El flujo explícito permite medir cada
   paso. RAG reduce las respuestas inventadas pero no las elimina; se complementa con umbral, prompt restrictivo y pruebas.
+- **Implementación, calibración y resultados:** ver D-13.
 
 ### D-08 · Ingesta de documentos
 
@@ -340,6 +342,71 @@ El requisito dice que el historial **puede** registrarse de forma asíncrona en 
 - **A verificar en su momento:** SDK y versión, modelo de la tabla, y si se desarrolla contra DynamoDB Local o una cuenta de AWS.
 - Las credenciales de AWS viven solo en backend, igual que la API key del proveedor LLM.
 
+### D-13 · Implementación de la consulta RAG — *implementa D-07 (R-18, R-20)*
+
+Flujo implementado en `service/rag`:
+
+1. `KnowledgeRetriever`: búsqueda en pgvector con Top-K, umbral de similitud y filtro `visibility=PUBLIC`.
+2. Si no queda ningún fragmento, se responde con una frase fija **sin llamar al LLM**.
+3. `RagPromptBuilder`: reglas restrictivas + contexto (con presupuesto de caracteres) + pregunta.
+4. `AnswerGenerator` (interfaz) con `SpringAiAnswerGenerator` (`ChatClient` sobre Ollama).
+5. `RagService` interpreta la salida. Las fuentes son los fragmentos recuperados; si no hay información, la lista va vacía.
+
+Parámetros, todos configurables por variable de entorno: `RAG_TOP_K` = 4, `RAG_SIMILARITY_THRESHOLD` = 0.55,
+`RAG_MAX_CONTEXT_CHARS` = 6000.
+
+**a) Cómo reconoce el servicio que "no hay información"** *(decisión nuestra)*
+
+| Alternativa | Ventajas | Desventajas |
+|---|---|---|
+| A. Pedirle al LLM una frase exacta y buscarla en la respuesta | Respuesta final redactada por el modelo | Un modelo pequeño la parafrasea |
+| B. Pedirle una palabra clave (`SIN_INFORMACION`) y que el servicio escriba la frase final | Fácil de cumplir; salida uniforme; fuentes siempre coherentes | El modelo no redacta la negativa |
+
+- **Decisión:** **B.** Evidencia: con `qwen2.5:3b`, la alternativa A produjo "No **tienen** información suficiente…" junto a 4 fuentes
+  (una negativa con fuentes, incoherente). Con B, la pregunta sobre una tarifa que no existe respondió `SIN_INFORMACION` y salió sin fuentes.
+
+**b) Umbral de similitud** *(decisión nuestra, calibrada con mediciones)*
+
+Mejor puntaje de similitud por pregunta, con `bge-m3` y los 5 documentos actuales:
+
+| Pregunta | Mejor score | ¿Debe responder? |
+|---|---|---|
+| Capital de Francia | < 0.30 | No |
+| Instrucción de ignorar reglas | 0.37 | No |
+| Pagos con bitcoin | 0.52 | No |
+| Tubo roto en la calle | 0.62 | Sí |
+| Horario de atención | 0.66 | Sí |
+| Cómo pagar la factura | 0.68 | Sí |
+| Tarifa residencial | 0.73 | Sí |
+
+- **Decisión:** `0.55`, dentro de la separación entre 0.52 y 0.62.
+- **Supuesto:** calibrado con 5 documentos y 16 fragmentos. **Con documentos reales hay que recalibrar** (por eso es configuración).
+
+**c) Modelo de chat local por defecto** *(decisión nuestra)*
+
+`qwen2.5:3b`. El `7b` no cabe en una GPU de 4 GB junto a `bge-m3` y Ollama falló con `CUDA error` al cargarlo. Se puede subir con
+`OLLAMA_CHAT_MODEL=qwen2.5:7b` en equipos con más VRAM.
+
+**d) Errores** *(R-23: respuestas uniformes, sin stack traces)*
+
+| Situación | Respuesta |
+|---|---|
+| Mensaje vacío, en blanco o de más de 500 caracteres | 400, validado por el contrato OpenAPI |
+| LLM o base vectorial no disponibles | 503 (`AiServiceUnavailableException`), mensaje genérico |
+| Cualquier otro error inesperado | 500 genérico; el detalle solo queda en el log |
+
+Solo los fallos de infraestructura se traducen a 503; un bug real sigue siendo 500 y no se disfraza.
+
+**e) Limitaciones conocidas** *(para no presentarlas como resueltas)*
+
+- Las fuentes mostradas son los fragmentos **recuperados**, no los citados por el modelo; puede aparecer alguno poco relacionado.
+- El modelo de 3B a veces responde de forma parcial o con redacción imperfecta (por ejemplo, omitió un tramo de tarifa
+  en una respuesta). Se mitigó con una regla del prompt, no se eliminó.
+- No hay memoria de conversación (ver S-09).
+- La regla del prompt sobre datos personales o de cuenta **no se ha probado con el modelo real**.
+
+**f) Verificación** (2026-10-08): pruebas manuales con Ollama real (`qwen2.5:3b` y `bge-m3`, 100% GPU) y PostgreSQL;
+respuestas con fuentes, respuesta sin LLM por umbral, negativa por palabra clave, 400 por mensaje en blanco.
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -402,3 +469,5 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | Supuestos S-01, S-03, S-04 anteriores | DTO/OpenAPI, ubicación de F01, alcance público | Resueltos por la clase y reemplazados por los de la sección 3 |
 | Paquete raíz y Maven (2026-10-06) | Nombre del paquete provisional; versión de Maven sin definir | Paquete `com.oficinaagua.chatbot`, artefacto `chatbot-service`; Maven Wrapper 3.9.16; `pom.xml` manual porque Initializr no ofrece Boot 3.5 |
 | D-08 Ingesta (2026-10-07) | Acción administrativa sin definir | Perfil `ingest` con `ApplicationRunner`, troceo por `##`, idempotencia con la tabla `knowledge_document` |
+| D-05 Modelo de chat (2026-10-08) | `qwen2.5:7b` por defecto | `qwen2.5:3b` por defecto: el 7b no cabe en 4 GB de VRAM (D-13) |
+| D-07 Flujo RAG (2026-10-08) | Diseño propuesto | Implementado y calibrado; umbral 0.55; negativa por palabra clave (D-13) |

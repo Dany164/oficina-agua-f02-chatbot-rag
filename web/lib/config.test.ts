@@ -6,6 +6,7 @@ const VARS = [
     'CHATBOT_TIMEOUT_MS',
     'BFF_RATE_LIMIT_MAX_REQUESTS',
     'BFF_RATE_LIMIT_WINDOW_SECONDS',
+    'BFF_TRUST_PROXY_HEADERS',
 ];
 
 function clearVars() {
@@ -25,6 +26,7 @@ describe('loadConfig', () => {
             rateLimitMaxRequests: 10,
             rateLimitWindowSeconds: 60,
             maxMessageLength: 500,
+            trustProxyHeaders: false,
         });
     });
 
@@ -33,12 +35,16 @@ describe('loadConfig', () => {
         process.env.CHATBOT_TIMEOUT_MS = '5000';
         process.env.BFF_RATE_LIMIT_MAX_REQUESTS = '3';
         process.env.BFF_RATE_LIMIT_WINDOW_SECONDS = '30';
+        process.env.BFF_TRUST_PROXY_HEADERS = 'true';
+
 
         expect(loadConfig()).toMatchObject({
             chatApiUrl: 'http://backend:8081',
             requestTimeoutMs: 5000,
             rateLimitMaxRequests: 3,
             rateLimitWindowSeconds: 30,
+            trustProxyHeaders: true,
+
         });
     });
 
@@ -54,5 +60,11 @@ describe('loadConfig', () => {
 
         process.env.BFF_RATE_LIMIT_MAX_REQUESTS = '0';
         expect(() => loadConfig()).toThrow('BFF_RATE_LIMIT_MAX_REQUESTS');
+    });
+
+    it('solo activa trustProxyHeaders con el valor "true"', () => {
+        process.env.BFF_TRUST_PROXY_HEADERS = 'yes';
+
+        expect(loadConfig().trustProxyHeaders).toBe(false);
     });
 });

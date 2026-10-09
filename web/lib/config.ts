@@ -5,6 +5,8 @@ export interface BffConfig {
     requestTimeoutMs: number;
     rateLimitMaxRequests: number;
     rateLimitWindowSeconds: number;
+    /** Si es true, la IP del cliente se lee de X-Forwarded-For o X-Real-IP (solo detrás de un proxy de confianza). */
+    trustProxyHeaders: boolean;
     /** Fijado por el contrato OpenAPI del backend (maxLength de ChatRequest.message). */
     maxMessageLength: number;
 }
@@ -31,5 +33,6 @@ export function loadConfig(): BffConfig {
         rateLimitMaxRequests: readPositiveInt('BFF_RATE_LIMIT_MAX_REQUESTS', 10),
         rateLimitWindowSeconds: readPositiveInt('BFF_RATE_LIMIT_WINDOW_SECONDS', 60),
         maxMessageLength: 500,
+        trustProxyHeaders: (process.env.BFF_TRUST_PROXY_HEADERS ?? '').trim().toLowerCase() === 'true',
     };
 }

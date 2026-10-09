@@ -44,6 +44,8 @@ El backend lee estas variables de entorno (solo `POSTGRES_PASSWORD` es obligator
 | `RAG_TOP_K` | `4` |
 | `RAG_SIMILARITY_THRESHOLD` | `0.55` (por debajo, el fragmento se descarta) |
 | `RAG_MAX_CONTEXT_CHARS` | `6000` |
+| `RATE_LIMIT_MAX_REQUESTS` | `10` (peticiones por cliente y ventana) |
+| `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 
 ## Cómo ejecutar (desarrollo)
 
@@ -94,5 +96,5 @@ En desarrollo.
 
 - Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
   integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
-  límite de longitud del mensaje, errores 400, 503 y 500).
-- Pendiente: rate limiting (429), interfaz y BFF en Next.js, Dockerización del backend e historial en DynamoDB (opcional).
+  límite de longitud del mensaje, errores 400, 503 y 500) y rate limiting por IP (429 con `Retry-After`).
+- Pendiente: interfaz y BFF en Next.js, Dockerización del backend e historial en DynamoDB (opcional).

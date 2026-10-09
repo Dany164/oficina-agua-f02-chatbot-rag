@@ -57,6 +57,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         List.of()));
     }
 
+    /** El cliente superó el límite de peticiones: 429 con Retry-After (segundos). */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<Object> handleRateLimitExceeded(RateLimitExceededException ex) {
+        log.warn("Rate limit excedido; reintentar en {} s", ex.getRetryAfterSeconds());
+        HttpStatus status = HttpStatus.TOO_MANY_REQUESTS;
+        return ResponseEntity.status(status)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+                .body(buildBody(status,
+                        "Demasiadas solicitudes. Intenta de nuevo en unos segundos.",
+                        List.of()));
+    }
+
     /** Cualquier error no previsto: 500 genérico. El detalle queda solo en el log del servidor. */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleUnexpected(Exception ex) {

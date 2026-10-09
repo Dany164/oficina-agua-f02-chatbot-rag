@@ -47,6 +47,17 @@ El backend lee estas variables de entorno (solo `POSTGRES_PASSWORD` es obligator
 | `RATE_LIMIT_MAX_REQUESTS` | `10` (peticiones por cliente y ventana) |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
 
+El BFF de `web/` lee estas variables solo en el servidor (ejemplo en `web/.env.example`; para cambiarlas, créalo como
+`web/.env.local`):
+
+| Variable | Valor por defecto |
+|---|---|
+| `CHATBOT_API_URL` | `http://localhost:8080` (URL del backend) |
+| `CHATBOT_TIMEOUT_MS` | `30000` |
+| `BFF_RATE_LIMIT_MAX_REQUESTS` | `10` (peticiones por cliente y ventana) |
+| `BFF_RATE_LIMIT_WINDOW_SECONDS` | `60` |
+| `BFF_TRUST_PROXY_HEADERS` | `false` (solo `true` detrás de un proxy de confianza) |
+
 ## Cómo ejecutar (desarrollo)
 
 Desde la raíz del repositorio, con Docker Desktop y Ollama abiertos:
@@ -90,11 +101,37 @@ que no tiene información suficiente y `sources` viene vacío. La primera consul
 
 Códigos de error: `400` (mensaje vacío, en blanco o de más de 500 caracteres) y `503` (Ollama o PostgreSQL no disponibles).
 
+### Probar el BFF (Next.js)
+
+Con el backend en marcha, en otra terminal:
+
+```bash
+cd web
+npm install
+npm run dev                               # http://localhost:3000
+```
+
+Si el backend corre en otro puerto (por ejemplo `SERVER_PORT=8081`), indícalo así:
+`CHATBOT_API_URL=http://localhost:8081 npm run dev`.
+
+```bash
+curl -s -X POST http://localhost:3000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Cual es el horario de atencion?"}'
+```
+
+El BFF responde lo mismo que el backend (`answer` y `sources`). Errores: `400` (mensaje inválido), `429` (demasiadas
+peticiones, con `Retry-After`) y `503` (backend no disponible). Los tests se corren con `npm test`.
+
+Nota: si llamas al backend directamente desde Git Bash con tildes, puede responder `400` por la codificación de la consola;
+prueba sin tildes o a través del BFF.
+
 ## Estado
 
 En desarrollo.
 
 - Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
   integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
-  límite de longitud del mensaje, errores 400, 503 y 500) y rate limiting por IP (429 con `Retry-After`).
-- Pendiente: interfaz y BFF en Next.js, Dockerización del backend e historial en DynamoDB (opcional).
+  límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`) y BFF en
+  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos).
+- Pendiente: pantalla de chat en Next.js, Dockerización del backend e historial en DynamoDB (opcional).

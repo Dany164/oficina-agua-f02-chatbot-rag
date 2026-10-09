@@ -444,6 +444,66 @@ en la rama del BFF habrá que leer `X-Forwarded-For`, y solo si una propiedad lo
 **f) Verificación** (2026-10-08): 65 tests en verde (5 del limitador con reloj manual, 3 de MVC con límite 2). Prueba real con el
 servidor: 12 peticiones seguidas devuelven 10 × `400` y 2 × `429`; la respuesta 429 incluye `Retry-After` y no expone detalles.
 El test web detectó un error durante el desarrollo: usar la URI en lugar de la IP como clave convertía el límite en uno global.
+
+### D-15 · BFF en Next.js — *implementa D-09 (R-18); la clase exige BFF en Next.js y claves del LLM solo en el backend*
+
+**a) Dónde vive el BFF** *(decisión nuestra)*
+
+| Alternativa | Ventajas | Desventajas |
+|---|---|---|
+| Route Handler dentro de la app Next (`web/app/api/chat/route.ts`) | Un solo proyecto y un solo despliegue; el navegador solo conoce `/api/chat` | El estado en memoria depende del entorno de ejecución (ver limitaciones) |
+| `rewrites` de `next.config` hacia el backend | Cero código | No permite validar ni limitar peticiones propias, que es justo para lo que está el BFF |
+| Servidor Node/Express aparte | Control total | Otro proyecto y otro despliegue; sobreingeniería para F02 |
+
+**Decisión:** Route Handler. La lógica está en `web/lib/` como funciones pequeñas y probadas; la ruta solo las conecta.
+
+**b) Responsabilidades del BFF:** validar el mensaje (obligatorio, texto, no vacío, máximo 500 caracteres), aplicar su propio límite
+de peticiones, reenviar al backend y traducir sus errores. Nunca tiene claves del LLM. El backend sigue validando y limitando
+(defensa en profundidad): el BFF no sustituye sus controles.
+
+**c) Parámetros** *(recomendación)*, todos de servidor (sin prefijo `NEXT_PUBLIC_`):
+
+| Variable | Defecto |
+|---|---|
+| `CHATBOT_API_URL` | `http://localhost:8080` |
+| `CHATBOT_TIMEOUT_MS` | `30000` |
+| `BFF_RATE_LIMIT_MAX_REQUESTS` | `10` |
+| `BFF_RATE_LIMIT_WINDOW_SECONDS` | `60` |
+| `BFF_TRUST_PROXY_HEADERS` | `false` |
+
+**d) Identificación del cliente:** con `BFF_TRUST_PROXY_HEADERS=false` (por defecto) todos comparten la clave `unknown`: es el
+comportamiento seguro, porque `X-Forwarded-For` es falsificable. Con `true` se usa el **último** valor de `X-Forwarded-For`
+(el que añadió el proxy de confianza) y, si no existe, `X-Real-IP`. El BFF reenvía esa IP al backend en `X-Forwarded-For`; el
+backend la ignora hasta que exista una propiedad que lo habilite (rama pequeña pendiente).
+
+**e) Errores hacia el navegador:** siempre `{timestamp, status, error, message}` sin detalles internos.
+
+| Caso | Respuesta |
+|---|---|
+| Cuerpo ilegible, mensaje vacío, no texto o de más de 500 caracteres | `400` (sin llamar al backend) |
+| Límite propio o `429` del backend | `429` con `Retry-After` |
+| Backend caído, timeout, respuesta inválida o cualquier otro error del backend | `503` con mensaje genérico |
+| Error inesperado en el BFF | `500` genérico |
+
+El detalle técnico solo se escribe en el log del servidor. Un `400` del backend se trata como `503`: el BFF ya validó, así que
+indicaría un desajuste de contrato, no un error del usuario. La respuesta exitosa se reconstruye solo con los campos del contrato
+(`answer`, `sources`).
+
+**f) Limitaciones conocidas**
+
+- El limitador vive en memoria: vale con una instancia; en serverless o con varias instancias cada una cuenta aparte, y en
+  desarrollo se reinicia con la recarga en caliente.
+- Ventana fija, igual que en el backend: ráfagas de hasta 2 × el máximo en el cambio de ventana.
+- Se asume un solo proxy de confianza delante del BFF.
+- El BFF no limita el tamaño del cuerpo antes de leerlo; eso se delega al proxy o a la plataforma de despliegue.
+- Hasta que el backend lea `X-Forwarded-For`, su propio límite ve la IP del BFF y agrupa a todos los usuarios.
+
+**g) Verificación** (2026-10-08): 58 tests, lint y `next build` en verde. Prueba real con backend, PostgreSQL y Ollama:
+pregunta del horario → `200` con respuesta y fuentes (10,8 s); mensaje en blanco → `400`; 12 peticiones seguidas →
+10 aceptadas y 2 × `429`; backend detenido → `503` genérico, con el detalle (`ECONNREFUSED`) solo en el log. Observación:
+llamando al backend directamente desde Git Bash con tildes se obtuvo un `400`, y la misma pregunta sin tildes funcionó;
+probablemente es la codificación de la consola (el BFF sí tolera esas peticiones), no un fallo del código.
+
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -509,3 +569,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-05 Modelo de chat (2026-10-08) | `qwen2.5:7b` por defecto | `qwen2.5:3b` por defecto: el 7b no cabe en 4 GB de VRAM (D-13) |
 | D-07 Flujo RAG (2026-10-08) | Diseño propuesto | Implementado y calibrado; umbral 0.55; negativa por palabra clave (D-13) |
 | D-09 Rate limiting (2026-10-08) | Límite previsto en BFF y backend | Backend implementado: ventana fija en memoria por IP, 10 peticiones/min, 429 con `Retry-After` (D-14); el BFF aplicará el suyo después |
+| D-09 BFF (2026-10-08) | Límite previsto en el BFF | BFF implementado: Route Handler `POST /api/chat` con validación, límite propio de 10 peticiones/min por IP y errores genéricos (D-15); el backend aún no lee la IP real |

@@ -89,4 +89,21 @@ class RateLimitWebTest {
 
         send("10.0.0.4").andExpect(status().isOk());
     }
+
+    @Test
+    void ignoresTheForwardedHeaderWhenNotEnabled() throws Exception {
+        // Sin la propiedad, X-Forwarded-For se ignora: la clave sigue siendo la IP de la conexión.
+        sendForwarded("10.0.0.5", "203.0.113.1").andExpect(status().isOk());
+        sendForwarded("10.0.0.5", "203.0.113.2").andExpect(status().isOk());
+        sendForwarded("10.0.0.5", "203.0.113.3").andExpect(status().isTooManyRequests());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions sendForwarded(String ip, String forwardedFor)
+            throws Exception {
+        return mockMvc.perform(post(URL)
+                .with(fromIp(ip))
+                .header("X-Forwarded-For", forwardedFor)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(BODY));
+    }
 }

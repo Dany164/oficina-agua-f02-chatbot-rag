@@ -13,16 +13,19 @@ import java.time.Duration;
 public class RateLimitConfig implements WebMvcConfigurer {
 
     private final RateLimiter rateLimiter;
+    private final boolean trustForwardedFor;
 
     public RateLimitConfig(
             @Value("${chatbot.rate-limit.max-requests}") int maxRequests,
-            @Value("${chatbot.rate-limit.window-seconds}") long windowSeconds) {
+            @Value("${chatbot.rate-limit.window-seconds}") long windowSeconds,
+            @Value("${chatbot.rate-limit.trust-forwarded-for:false}") boolean trustForwardedFor) {
         this.rateLimiter = new RateLimiter(maxRequests, Duration.ofSeconds(windowSeconds), Clock.systemUTC());
+        this.trustForwardedFor = trustForwardedFor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new RateLimitInterceptor(rateLimiter))
+        registry.addInterceptor(new RateLimitInterceptor(rateLimiter, trustForwardedFor))
                 .addPathPatterns("/api/v1/chat/**");
     }
 }

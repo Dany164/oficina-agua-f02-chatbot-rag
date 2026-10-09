@@ -27,6 +27,7 @@ chatbot:
   rate-limit:
     max-requests: ${RATE_LIMIT_MAX_REQUESTS:10}
     window-seconds: ${RATE_LIMIT_WINDOW_SECONDS:60}
+    trust-forwarded-for: ${RATE_LIMIT_TRUST_FORWARDED_FOR:false}
   rag:
     top-k: ${RAG_TOP_K:4}
     similarity-threshold: ${RAG_SIMILARITY_THRESHOLD:0.55}

@@ -431,19 +431,26 @@ La Clase 11 exige rate limiting y límite de longitud del mensaje (R-18). El res
 `ErrorResponseDto`, mensaje genérico y la cabecera `Retry-After` (segundos). El límite se aplica **antes** de validar el cuerpo, así
 que los mensajes inválidos también cuentan.
 
-**d) Identificación del cliente:** IP de la conexión (`getRemoteAddr()`). Detrás del BFF de Next.js el backend verá la IP del BFF;
-en la rama del BFF habrá que leer `X-Forwarded-For`, y solo si una propiedad lo habilita (la cabecera es falsificable).
+**d) Identificación del cliente:** por defecto, la IP de la conexión (`getRemoteAddr()`). Detrás del BFF de Next.js eso es la IP del BFF y todos los usuarios compartirían contador, así que existe la propiedad `chatbot.rate-limit.trust-forwarded-for` (variable `RATE_LIMIT_TRUST_FORWARDED_FOR`, por defecto `false`). Activada, la clave es el **último** valor de `X-Forwarded-For` (el que añadió el BFF, único proxy de confianza); si la cabecera falta o está vacía, se usa la IP de la conexión.
 
 **e) Limitaciones conocidas**
 
 - El estado vive en memoria: solo vale con una instancia del backend; con varias habría que mover el contador a Redis.
 - Ventana fija: un cliente puede hacer hasta 2 × el máximo alrededor del cambio de ventana.
-- Hasta que exista el BFF, todos los usuarios que lleguen a través de él compartirían una misma IP y un mismo contador.
+- Con la propiedad desactivada (por defecto), todos los usuarios que lleguen a través del BFF comparten la IP del BFF y un mismo contador. Con ella activada, el backend solo debe ser accesible a través del BFF: quien lo alcance directamente puede falsificar `X-Forwarded-For`.
 - Las ventanas expiradas se purgan solo cuando el mapa supera 10 000 claves.
 
 **f) Verificación** (2026-10-08): 65 tests en verde (5 del limitador con reloj manual, 3 de MVC con límite 2). Prueba real con el
 servidor: 12 peticiones seguidas devuelven 10 × `400` y 2 × `429`; la respuesta 429 incluye `Retry-After` y no expone detalles.
 El test web detectó un error durante el desarrollo: usar la URI en lugar de la IP como clave convertía el límite en uno global.
+
+**g) IP reenviada** (2026-10-12): `RateLimitInterceptor` usa el último valor de `X-Forwarded-For` cuando
+`chatbot.rate-limit.trust-forwarded-for=true`; por defecto lo ignora. Alternativas descartadas: `server.forward-headers-strategy=native`
+(Tomcat `RemoteIpValve`), porque MockMvc no arranca Tomcat y no se podía probar con la suite actual, y porque por defecto confía en
+cualquier red privada; y dejar la IP del BFF, que agrupa a todos los usuarios. Verificación: 70 tests en verde (4 nuevos en
+`RateLimitForwardedIpWebTest` y 1 en `RateLimitWebTest` que protege el valor por defecto). Prueba real con el servidor y límite 2: con
+la propiedad, un cliente reenviado recibe `400`, `400`, `429` y otro cliente distinto `400`; sin ella, los cuatro comparten contador
+(`400`, `400`, `429`, `429`). El contrato OpenAPI declara ahora la cabecera `Retry-After` en la respuesta 429.
 
 ### D-15 · BFF en Next.js — *implementa D-09 (R-18); la clase exige BFF en Next.js y claves del LLM solo en el backend*
 
@@ -474,7 +481,7 @@ de peticiones, reenviar al backend y traducir sus errores. Nunca tiene claves de
 **d) Identificación del cliente:** con `BFF_TRUST_PROXY_HEADERS=false` (por defecto) todos comparten la clave `unknown`: es el
 comportamiento seguro, porque `X-Forwarded-For` es falsificable. Con `true` se usa el **último** valor de `X-Forwarded-For`
 (el que añadió el proxy de confianza) y, si no existe, `X-Real-IP`. El BFF reenvía esa IP al backend en `X-Forwarded-For`; el
-backend la ignora hasta que exista una propiedad que lo habilite (rama pequeña pendiente).
+backend la usa si `RATE_LIMIT_TRUST_FORWARDED_FOR=true` (D-14); por defecto la ignora.
 
 **e) Errores hacia el navegador:** siempre `{timestamp, status, error, message}` sin detalles internos.
 
@@ -496,7 +503,7 @@ indicaría un desajuste de contrato, no un error del usuario. La respuesta exito
 - Ventana fija, igual que en el backend: ráfagas de hasta 2 × el máximo en el cambio de ventana.
 - Se asume un solo proxy de confianza delante del BFF.
 - El BFF no limita el tamaño del cuerpo antes de leerlo; eso se delega al proxy o a la plataforma de despliegue.
-- Hasta que el backend lea `X-Forwarded-For`, su propio límite ve la IP del BFF y agrupa a todos los usuarios.
+- Para que el límite del backend distinga usuarios hay que activar `RATE_LIMIT_TRUST_FORWARDED_FOR=true` (D-14), y entonces el backend no debe quedar accesible sin pasar por el BFF.
 
 **g) Verificación** (2026-10-08): 58 tests, lint y `next build` en verde. Prueba real con backend, PostgreSQL y Ollama:
 pregunta del horario → `200` con respuesta y fuentes (10,8 s); mensaje en blanco → `400`; 12 peticiones seguidas →
@@ -570,3 +577,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-07 Flujo RAG (2026-10-08) | Diseño propuesto | Implementado y calibrado; umbral 0.55; negativa por palabra clave (D-13) |
 | D-09 Rate limiting (2026-10-08) | Límite previsto en BFF y backend | Backend implementado: ventana fija en memoria por IP, 10 peticiones/min, 429 con `Retry-After` (D-14); el BFF aplicará el suyo después |
 | D-09 BFF (2026-10-08) | Límite previsto en el BFF | BFF implementado: Route Handler `POST /api/chat` con validación, límite propio de 10 peticiones/min por IP y errores genéricos (D-15); el backend aún no lee la IP real |
+| D-14 IP del cliente (2026-10-12) | Detrás del BFF el backend agrupaba a todos los usuarios en una IP | Con `RATE_LIMIT_TRUST_FORWARDED_FOR=true` usa el último valor de `X-Forwarded-For`; por defecto sigue usando la IP de la conexión |

@@ -46,6 +46,7 @@ El backend lee estas variables de entorno (solo `POSTGRES_PASSWORD` es obligator
 | `RAG_MAX_CONTEXT_CHARS` | `6000` |
 | `RATE_LIMIT_MAX_REQUESTS` | `10` (peticiones por cliente y ventana) |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` |
+| `RATE_LIMIT_TRUST_FORWARDED_FOR` | `false` (solo `true` si el backend es accesible únicamente a través del BFF) |
 
 El BFF de `web/` lee estas variables solo en el servidor (ejemplo en `web/.env.example`; para cambiarlas, créalo como
 `web/.env.local`):

@@ -105,6 +105,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     TooManyRequests:
       description: Se superó el límite de solicitudes
+      headers:
+        Retry-After:
+          description: Segundos que el cliente debe esperar antes de volver a intentarlo
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:

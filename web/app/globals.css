@@ -36,8 +36,9 @@
 .water-mascot--sm { width: 2.75rem; height: 2.75rem; border: 2px solid oklch(0.8 0.08 195 / .7); border-radius: 999px; background: oklch(0.96 0.06 195); overflow: hidden; }
 .water-mascot__halo { position: absolute; inset: 5%; border-radius: 50%; background: oklch(0.62 0.2 190 / .28); filter: blur(20px); z-index: -1; }
 .water-mascot__float { position: absolute; inset: 0; animation: mascot-float 4.8s ease-in-out infinite; }
-.water-mascot__tilt { position: absolute; inset: 0; transform: perspective(800px) rotateY(calc(var(--tilt-x, 0) * 10deg)) rotateX(calc(var(--tilt-y, 0) * -8deg)) translate(calc(var(--tilt-x, 0) * 6px), calc(var(--tilt-y, 0) * 4px)); transition: transform 120ms ease-out; }
-.water-mascot__image { object-fit: contain; }
+.water-mascot__tilt { position: absolute; inset: 0; transform: perspective(800px) rotateY(calc(var(--tilt-x, 0) * 40deg)) rotateX(calc(var(--tilt-y, 0) * -25deg)) translate(calc(var(--tilt-x, 0) * 16px), calc(var(--tilt-y, 0) * 10px)); transition: transform 90ms ease-out; }.water-mascot__image { object-fit: contain; }
+.water-mascot--sm .water-mascot__tilt { transform: none; transition: none; }
+.water-mascot--sm .water-mascot__float { animation: none; }
 .water-mascot__image--small { object-fit: contain; object-position: center; transform: scale(1.08); }
 .water-mascot__shadow { position: absolute; left: 20%; right: 20%; bottom: 0; height: 10%; border-radius: 50%; background: oklch(0.32 0.12 205 / .24); filter: blur(8px); animation: mascot-shadow 4.8s ease-in-out infinite; z-index: -1; }
 .water-mascot__bubbles { position: absolute; inset: -12%; z-index: 2; pointer-events: none; }

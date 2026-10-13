@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { useChat } from '@/hooks/use-chat'
 import { ChatComposer } from './chat-composer'
 import { ChatEmptyState } from './chat-empty-state'
@@ -13,7 +13,16 @@ import { TypingIndicator } from './typing-indicator'
 export function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
   const [input, setInput] = useState('')
   const [openSources, setOpenSources] = useState<Record<string, boolean>>({})
+  const endRef = useRef<HTMLDivElement>(null)
   const hasMessages = chat.messages.length > 0
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    endRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'end',
+    })
+  }, [chat.messages.length, chat.status, chat.error])
 
   return (
       <section
@@ -44,6 +53,7 @@ export function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
               </div>
           )}
           {chat.error && <ChatStatusNotice error={chat.error} onRetry={chat.retry} />}
+          <div ref={endRef} />
         </div>
         <ChatComposer
             value={input}

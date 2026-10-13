@@ -64,7 +64,7 @@ El BFF de `web/` lee estas variables solo en el servidor (ejemplo en `web/.env.e
 Desde la raíz del repositorio, con Docker Desktop y Ollama abiertos:
 
 ```bash
-docker compose up -d                      # PostgreSQL + pgvector en el puerto 5433
+docker compose up -d postgres             # solo PostgreSQL + pgvector en el puerto 5433
 export POSTGRES_PASSWORD='<la de tu .env>'
 cd backend
 ./mvnw clean verify                       # compila, genera el código del contrato y corre los tests
@@ -102,6 +102,29 @@ que no tiene información suficiente y `sources` viene vacío. La primera consul
 
 Códigos de error: `400` (mensaje vacío, en blanco o de más de 500 caracteres) y `503` (Ollama o PostgreSQL no disponibles).
 
+### Ejecutar el backend con Docker
+
+También puedes correr PostgreSQL y el backend juntos, sin instalar Java ni Maven. Desde la raíz del repositorio, con Docker
+Desktop y Ollama abiertos y `POSTGRES_PASSWORD` definida en `.env`:
+
+```bash
+docker compose up -d --build              # PostgreSQL + backend; el backend queda en http://localhost:8081
+docker compose logs -f backend            # seguir el arranque (Ctrl+C para salir)
+```
+
+La primera construcción tarda varios minutos porque descarga las imágenes y las dependencias; las siguientes reutilizan
+la caché. El backend se publica en el puerto 8081 (cámbialo con `BACKEND_PORT` en `.env`). Dentro de Docker se conecta a
+PostgreSQL por el nombre del servicio y a Ollama, que sigue corriendo en tu equipo, por `http://host.docker.internal:11434`
+(cámbialo con `OLLAMA_BASE_URL`).
+
+Para cargar la base de conocimiento desde el contenedor (la carpeta `knowledge/` se monta en solo lectura):
+
+```bash
+docker compose run --rm -e SPRING_PROFILES_ACTIVE=ingest backend
+```
+
+Para que la web use este backend, define `CHATBOT_API_URL=http://localhost:8081` en `web/.env.local`. Para detener todo:
+`docker compose down` (los datos se conservan en el volumen; `docker compose down -v` los borra).
 ### Probar el BFF (Next.js)
 
 Con el backend en marcha, en otra terminal:
@@ -151,6 +174,7 @@ En desarrollo.
 - Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
   integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
   límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`), BFF en
-  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos) y pantalla de chat generada con v0
-  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero).
-- Pendiente: Dockerización del backend e historial en DynamoDB (opcional).
+  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos), pantalla de chat generada con v0
+  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero) y backend en Docker
+  (Dockerfile y servicio en Docker Compose).
+- Pendiente: historial en DynamoDB (opcional).

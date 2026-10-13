@@ -531,6 +531,25 @@ probablemente es la codificación de la consola (el BFF sí tolera esas peticion
 - Node 22.12 emite `EBADENGINE` para `eslint-visitor-keys`, que pide 22.13 o superior. Se actualizará Node más adelante.
 - En Windows, `curl` desde Git Bash envía las tildes en otra codificación y el backend responde 400. Con escapes JSON (`\u00e1`) o desde el navegador funciona.
 - Las fuentes se muestran como etiquetas, no como enlaces: los documentos son internos y no tienen dirección pública.
+### D-17 · Dockerización del backend — *tarea de empaquetado*
+
+**Contexto.** Hasta ahora solo PostgreSQL corría en Docker; el backend se ejecutaba con `./mvnw`. Para poder levantar el sistema sin instalar Java ni Maven hace falta empaquetar el backend.
+
+**Decisión.**
+
+- `backend/Dockerfile` de dos etapas: Maven con Java 17 compila el jar y una imagen ligera de Java 17 lo ejecuta con un usuario sin privilegios. Los tests no se ejecutan al construir la imagen; se corren con `./mvnw clean verify`.
+- El servicio `backend` se añade a `docker-compose.yml` junto a `postgres`: espera su healthcheck, se conecta con el nombre del servicio y el puerto interno (`POSTGRES_HOST=postgres`, `POSTGRES_PORT=5432`) y monta `knowledge/` en solo lectura para la ingesta.
+- Ollama sigue corriendo en el equipo y el contenedor lo alcanza por `host.docker.internal`, configurable con `OLLAMA_BASE_URL`. Con Docker Desktop en Windows funcionó sin cambiar la configuración de Ollama.
+- El backend se publica en el puerto 8081 (`BACKEND_PORT`) porque el 8080 lo usan otros servicios locales.
+- `web/` no se dockeriza todavía: se sigue ejecutando con `npm`.
+
+**Alternativas descartadas.** Ollama en un contenedor (complica el uso de la GPU en Windows y no aporta nada aquí); copiar un jar compilado fuera de Docker (menos reproducible).
+
+**Limitaciones conocidas.**
+
+- La primera construcción es lenta por la descarga de imágenes y dependencias; las siguientes usan la caché.
+- La imagen ocupa unos 500 MB en disco.
+- No se ha verificado fuera de Docker Desktop en Windows; en otros entornos, Ollama podría tener que escuchar en `0.0.0.0`.
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -600,3 +619,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-14 IP del cliente (2026-10-12) | Detrás del BFF el backend agrupaba a todos los usuarios en una IP | Con `RATE_LIMIT_TRUST_FORWARDED_FOR=true` usa el último valor de `X-Forwarded-For`; por defecto sigue usando la IP de la conexión |
 | D-16 Interfaz (2026-10-12) | Interfaz prevista con v0, sin dependencias definidas | v0 + Tailwind CSS + lucide-react; sin shadcn ni paquetes de IA; tipografía del sistema; solo tema claro (D-16) |
 | D-16 Lógica de la UI (2026-10-12) | Lógica dentro de los componentes generados | Cliente `chatApi`, reductor `chatState` y cálculo `tilt` con TDD; hooks finos verificados a mano (D-16) |
+| D-17 Docker (2026-10-13) | Solo PostgreSQL en Docker Compose; el backend se ejecutaba con `./mvnw` | Backend con Dockerfile de dos etapas y servicio en Compose (puerto 8081); Ollama sigue en el equipo (D-17) |

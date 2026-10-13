@@ -16,5 +16,27 @@ services:
       timeout: 3s
       retries: 10
 
+  backend:
+    build: ./backend
+    image: chatbot-service:dev
+    container_name: chatbot-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      KNOWLEDGE_PATH: /knowledge
+    volumes:
+      - ./knowledge:/knowledge:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-8081}:8080"
+
 volumes:
   chatbot-pgdata:

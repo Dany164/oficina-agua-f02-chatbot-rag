@@ -510,7 +510,27 @@ pregunta del horario → `200` con respuesta y fuentes (10,8 s); mensaje en blan
 10 aceptadas y 2 × `429`; backend detenido → `503` genérico, con el detalle (`ECONNREFUSED`) solo en el log. Observación:
 llamando al backend directamente desde Git Bash con tildes se obtuvo un `400`, y la misma pregunta sin tildes funcionó;
 probablemente es la codificación de la consola (el BFF sí tolera esas peticiones), no un fallo del código.
+### D-16 · Interfaz del chat con v0, Tailwind CSS y lucide-react — *la clase exige generar la UI con v0 o Lovable*
 
+**Contexto.** La clase pide generar la interfaz con una herramienta de IA para UI (v0 o Lovable) y el ingeniero pidió React. El proyecto usa Next.js 16 con React 19.
+
+**Decisión.**
+
+- La UI visual (panel, mensajes, mascota, fondo) se generó con **v0**. Es solo presentación: no contiene lógica de red ni de estado.
+- Se aceptó **Tailwind CSS** porque v0 genera con esas clases. Dependencias nuevas: `tailwindcss` y `@tailwindcss/postcss` (desarrollo) y `lucide-react`. No se instalaron shadcn, `clsx`, `tailwind-merge`, `tw-animate-css`, `ai`, `@ai-sdk/react` ni `@vercel/analytics`, porque los componentes no los usan.
+- La lógica es nuestra y se desarrolló con TDD: `chatApi` (cliente del navegador hacia `/api/chat`), `chatState` (reductor: una petición a la vez, reintento sin duplicar la pregunta, respuestas tardías descartadas) y `tilt` (cálculo de la inclinación de la mascota).
+- Los hooks `useChat` y `useMascotTilt` son capas finas sin tests automáticos: toda la lógica con ramas vive en módulos puros probados, y los hooks se verificaron a mano.
+- Tipografía del sistema, sin Google Fonts, para que la compilación no dependa de la red. Solo tema claro.
+- La mascota es una imagen (`water-mascot.webp`) con efectos en CSS; respeta `prefers-reduced-motion` y no se mueve en pantallas táctiles.
+
+**Alternativas descartadas.** Lovable (sin ventaja para este caso); copiar toda la plantilla de v0 con shadcn (arrastra dependencias sin uso); lógica dentro de los componentes generados (no se puede probar).
+
+**Limitaciones conocidas.**
+
+- `npm audit` informa 5 vulnerabilidades altas, todas en la cadena de desarrollo de `eslint-config-next`. Con `--omit=dev` hay 0. No se usa `--force`.
+- Node 22.12 emite `EBADENGINE` para `eslint-visitor-keys`, que pide 22.13 o superior. Se actualizará Node más adelante.
+- En Windows, `curl` desde Git Bash envía las tildes en otra codificación y el backend responde 400. Con escapes JSON (`\u00e1`) o desde el navegador funciona.
+- Las fuentes se muestran como etiquetas, no como enlaces: los documentos son internos y no tienen dirección pública.
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -578,3 +598,5 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-09 Rate limiting (2026-10-08) | Límite previsto en BFF y backend | Backend implementado: ventana fija en memoria por IP, 10 peticiones/min, 429 con `Retry-After` (D-14); el BFF aplicará el suyo después |
 | D-09 BFF (2026-10-08) | Límite previsto en el BFF | BFF implementado: Route Handler `POST /api/chat` con validación, límite propio de 10 peticiones/min por IP y errores genéricos (D-15); el backend aún no lee la IP real |
 | D-14 IP del cliente (2026-10-12) | Detrás del BFF el backend agrupaba a todos los usuarios en una IP | Con `RATE_LIMIT_TRUST_FORWARDED_FOR=true` usa el último valor de `X-Forwarded-For`; por defecto sigue usando la IP de la conexión |
+| D-16 Interfaz (2026-10-12) | Interfaz prevista con v0, sin dependencias definidas | v0 + Tailwind CSS + lucide-react; sin shadcn ni paquetes de IA; tipografía del sistema; solo tema claro (D-16) |
+| D-16 Lógica de la UI (2026-10-12) | Lógica dentro de los componentes generados | Cliente `chatApi`, reductor `chatState` y cálculo `tilt` con TDD; hooks finos verificados a mano (D-16) |

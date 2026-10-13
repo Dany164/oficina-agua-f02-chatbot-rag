@@ -127,12 +127,30 @@ peticiones, con `Retry-After`) y `503` (backend no disponible). Los tests se cor
 Nota: si llamas al backend directamente desde Git Bash con tildes, puede responder `400` por la codificación de la consola;
 prueba sin tildes o a través del BFF.
 
+### Probar la interfaz de chat
+
+Con el backend y el BFF en marcha, abre `http://localhost:3000`. Si el backend corre en otro puerto, guarda la dirección una vez
+en `web/.env.local` (el archivo está ignorado por Git) y reinicia `npm run dev`:
+
+```bash
+printf 'CHATBOT_API_URL=http://localhost:8081\n' > web/.env.local
+```
+
+La pantalla muestra las preguntas sugeridas, un indicador mientras se busca la respuesta, las fuentes usadas (como etiquetas
+desplegables, no como enlaces) y, ante un error, un aviso con el botón **Reintentar**; con un `429` el botón se habilita al
+terminar la cuenta regresiva. En escritorio la mascota sigue el puntero. Las decisiones de diseño están en
+`docs/decisiones-arquitectura.md` (D-16).
+
+Si llamas al backend con `curl` desde Git Bash y la pregunta lleva tildes, usa escapes JSON, por ejemplo
+`\u00bfCu\u00e1l es el horario?`, o prueba a través del BFF.
+
 ## Estado
 
 En desarrollo.
 
 - Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
   integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
-  límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`) y BFF en
-  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos).
-- Pendiente: pantalla de chat en Next.js, Dockerización del backend e historial en DynamoDB (opcional).
+  límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`), BFF en
+  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos) y pantalla de chat generada con v0
+  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero).
+- Pendiente: Dockerización del backend e historial en DynamoDB (opcional).

@@ -167,6 +167,26 @@ terminar la cuenta regresiva. En escritorio la mascota sigue el puntero. Las dec
 Si llamas al backend con `curl` desde Git Bash y la pregunta lleva tildes, usa escapes JSON, por ejemplo
 `\u00bfCu\u00e1l es el horario?`, o prueba a través del BFF.
 
+### Incrustar el chat como widget
+
+El chat también puede mostrarse como un botón flotante dentro de otra página, por ejemplo la página pública con captcha. La
+página anfitriona solo añade una línea con la dirección donde corre `web/`:
+
+```html
+<script src="http://localhost:3000/widget.js" defer></script>
+```
+
+El botón abre `/embed` (solo el chat) en un iframe, y se cierra con el mismo botón o con Escape. Para que otro sitio pueda
+incrustarlo hay que permitir su origen en `web/.env.local` y reiniciar `npm run dev`:
+
+```bash
+WIDGET_ALLOWED_ORIGINS=http://localhost:5000
+```
+
+Sin esa variable solo se puede incrustar desde el propio sitio. Para probarlo sin la página real, abre
+`http://localhost:3000/demo-captcha.html` (mismo origen) o sirve una página propia en otro puerto con la línea anterior. Las
+decisiones están en `docs/decisiones-arquitectura.md` (D-18).
+
 ## Estado
 
 En desarrollo.
@@ -175,6 +195,6 @@ En desarrollo.
   integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
   límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`), BFF en
   Next.js (`POST /api/chat` con validación, límite propio y errores genéricos), pantalla de chat generada con v0
-  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero) y backend en Docker
-  (Dockerfile y servicio en Docker Compose).
+  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero), backend en Docker
+  (Dockerfile y servicio en Docker Compose) y widget embebible para la página pública (`/embed` y `widget.js`).
 - Pendiente: historial en DynamoDB (opcional).

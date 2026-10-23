@@ -12,6 +12,7 @@ spring:
         options:
           model: ${OLLAMA_CHAT_MODEL:qwen2.5:3b}
           num-ctx: 4096
+          temperature: ${OLLAMA_CHAT_TEMPERATURE:0.1}
       embedding:
         options:
           model: ${OLLAMA_EMBEDDING_MODEL:bge-m3}

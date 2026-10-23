@@ -10,7 +10,7 @@ import { ChatStatusNotice } from './chat-status-notice'
 import { SlowResponseNotice } from './slow-response-notice'
 import { TypingIndicator } from './typing-indicator'
 
-export function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
+export function ChatPanel({ chat, compact = false }: { chat: ReturnType<typeof useChat>; compact?: boolean }) {
   const [input, setInput] = useState('')
   const [openSources, setOpenSources] = useState<Record<string, boolean>>({})
   const endRef = useRef<HTMLDivElement>(null)
@@ -38,7 +38,7 @@ export function ChatPanel({ chat }: { chat: ReturnType<typeof useChat> }) {
         />
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-7" aria-live="polite">
           {!hasMessages ? (
-              <ChatEmptyState onSelect={chat.send} />
+              <ChatEmptyState onSelect={chat.send} compact={compact} />
           ) : (
               <ChatMessageList
                   messages={chat.messages}

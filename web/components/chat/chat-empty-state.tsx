@@ -1,4 +1,41 @@
-import { WaterMascot } from './water-mascot'
-import { GREETING, SUGGESTED_QUESTIONS } from '@/lib/chatCopy'
+import {WaterMascot} from './water-mascot'
+import {GREETING, SUGGESTED_QUESTIONS} from '@/lib/chatCopy'
 
-export function ChatEmptyState({ onSelect }: { onSelect: (text: string) => void }) { return <div className="flex min-h-full flex-col items-center justify-center gap-5"><div className="flex w-full max-w-[32rem] flex-col items-center gap-4"><div className="grid size-40 place-items-center lg:hidden sm:size-48"><WaterMascot size="lg" /></div><div className="relative w-full rounded-2xl rounded-bl-sm bg-[var(--water-assistant)] px-4 py-3 text-base leading-7 text-[var(--water-ink)]">{GREETING}</div></div><div className="flex w-full max-w-[32rem] flex-col gap-2"><p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--water-muted)]">Preguntas sugeridas</p>{SUGGESTED_QUESTIONS.map((suggestion) => <button key={suggestion} type="button" onClick={() => onSelect(suggestion)} className="rounded-xl border border-[var(--water-border)] bg-white px-3 py-2 text-left text-base leading-6 text-[var(--water-ink)] transition hover:border-[var(--water-primary)] hover:bg-[var(--water-tint)] focus-visible:outline-2 focus-visible:outline-[var(--water-primary)]">{suggestion}</button>)}</div></div> }
+export function ChatEmptyState({
+                                   onSelect,
+                                   compact = false,
+                               }: {
+    onSelect: (text: string) => void
+    compact?: boolean
+}) {
+    return (
+        <div className="flex min-h-full flex-col items-center justify-center gap-5">
+            <div className="flex w-full max-w-[32rem] flex-col items-center gap-4">
+                {!compact && (
+                    <div className="grid size-40 place-items-center lg:hidden sm:size-48">
+                        <WaterMascot size="lg"/>
+                    </div>
+                )}
+                <div
+                    className="relative w-full rounded-2xl rounded-bl-sm bg-[var(--water-assistant)] px-4 py-3 text-base leading-7 text-[var(--water-ink)]">
+                    {GREETING}
+                </div>
+            </div>
+            <div className="flex w-full max-w-[32rem] flex-col gap-2">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--water-muted)]">
+                    Preguntas sugeridas
+                </p>
+                {SUGGESTED_QUESTIONS.map((suggestion) => (
+                    <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => onSelect(suggestion)}
+                        className="rounded-xl border border-[var(--water-border)] bg-white px-3 py-2 text-left text-base leading-6 text-[var(--water-ink)] transition hover:border-[var(--water-primary)] hover:bg-[var(--water-tint)] focus-visible:outline-2 focus-visible:outline-[var(--water-primary)]"
+                    >
+                        {suggestion}
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}

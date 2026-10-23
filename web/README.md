@@ -34,3 +34,10 @@ CHATBOT_API_URL=http://localhost:8081
 ```
 
 Next solo lee ese archivo al arrancar: reinicia `npm run dev` tras cambiarlo.
+
+Para permitir que otro sitio incruste el chat como widget (`/embed`), añade sus orígenes separados por comas; por defecto solo
+se permite el propio sitio:
+
+```bash
+WIDGET_ALLOWED_ORIGINS=http://localhost:5000
+```

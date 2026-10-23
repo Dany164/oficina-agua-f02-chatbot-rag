@@ -550,6 +550,27 @@ probablemente es la codificación de la consola (el BFF sí tolera esas peticion
 - La primera construcción es lenta por la descarga de imágenes y dependencias; las siguientes usan la caché.
 - La imagen ocupa unos 500 MB en disco.
 - No se ha verificado fuera de Docker Desktop en Windows; en otros entornos, Ollama podría tener que escuchar en `0.0.0.0`.
+
+### D-18 · Widget embebible en la página pública — *el ingeniero pidió un widget en la página con captcha de F01, como una dependencia*
+
+**Contexto.** El ingeniero indicó (mensaje del 2026-10-19) que el chat debe ser un widget dentro de la página pública con captcha de F01, no una página aparte, y que debe comportarse como una dependencia: quien programa esa página no debería hacer mayor esfuerzo para incorporarlo. No conocemos la tecnología de esa página; la solución técnica de abajo es *recomendación* nuestra.
+
+**Decisión.**
+
+- `/embed`: ruta de Next.js que muestra solo el panel de chat, sin héroe ni fondo decorativo, reutilizando `useChat` y `ChatPanel` con la opción `compact` (sin la mascota grande, para que las preguntas sugeridas se vean sin desplazarse).
+- `web/public/widget.js`: script sin dependencias. La página anfitriona añade una sola línea, `<script src="https://DOMINIO_DEL_CHAT/widget.js" defer></script>`. El script muestra un botón flotante dentro de un Shadow DOM, para que los estilos de la página no lo afecten, y abre `/embed` en un iframe con `sandbox`. El iframe se crea al abrir por primera vez, así que cargar la página anfitriona no genera tráfico al chatbot.
+- Se cierra con el botón o con Escape. Como el foco queda dentro del iframe, el chat embebido avisa al widget con `postMessage` y el widget solo acepta ese mensaje si viene de su propio iframe.
+- `/embed` envía `Content-Security-Policy: frame-ancestors`: solo el propio sitio puede incrustarlo, más los orígenes de `WIDGET_ALLOWED_ORIGINS` (lista separada por comas; las entradas que no sean URL `http(s)` se ignoran).
+- El iframe llama al BFF de su propio origen, así que no hay CORS y las claves del LLM siguen solo en el backend.
+- `web/public/demo-captcha.html` simula la página pública para probarlo.
+
+**Alternativas descartadas.** Web Component propio (obliga a reescribir la interfaz fuera de Next y a llamar al backend sin pasar por el BFF); paquete npm de React (solo sirve si la página anfitriona es React). Si la página de F01 resulta ser React o Next, se podría ofrecer además un paquete que envuelva el mismo script.
+
+**Limitaciones conocidas.**
+
+- Requiere que `web/` esté alojada en una dirección accesible desde la página anfitriona. Hoy solo se ejecuta en local (`npm run dev`), por lo que la demostración funciona en el equipo donde corre.
+- Se probó con una página de demostración en otro origen (`localhost:5000`) y en Edge; no se ha probado en la página real de F01 ni en otros navegadores.
+- El tamaño del panel es fijo en escritorio (400 × 600) y casi de pantalla completa en móvil; el color del botón está fijo en el script.
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -620,3 +641,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-16 Interfaz (2026-10-12) | Interfaz prevista con v0, sin dependencias definidas | v0 + Tailwind CSS + lucide-react; sin shadcn ni paquetes de IA; tipografía del sistema; solo tema claro (D-16) |
 | D-16 Lógica de la UI (2026-10-12) | Lógica dentro de los componentes generados | Cliente `chatApi`, reductor `chatState` y cálculo `tilt` con TDD; hooks finos verificados a mano (D-16) |
 | D-17 Docker (2026-10-13) | Solo PostgreSQL en Docker Compose; el backend se ejecutaba con `./mvnw` | Backend con Dockerfile de dos etapas y servicio en Compose (puerto 8081); Ollama sigue en el equipo (D-17) |
+| D-18 Widget (2026-10-22) | El chat solo existía como página completa en `/` | Widget embebible: ruta `/embed` y script `widget.js` que abre el chat en un iframe, restringido con `frame-ancestors` (D-18) |

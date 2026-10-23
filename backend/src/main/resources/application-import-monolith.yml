@@ -1,0 +1,11 @@
+spring:
+  main:
+    web-application-type: none
+chatbot:
+  monolith:
+    host: ${MONOLITH_DB_HOST}
+    port: ${MONOLITH_DB_PORT:3306}
+    name: ${MONOLITH_DB_NAME:oficina_agua}
+    user: ${MONOLITH_DB_USER:chatbot_ro}
+    password: ${MONOLITH_DB_PASSWORD}
+    ca-cert: ${MONOLITH_DB_CA_CERT:../secrets/oficina-agua-ca.pem}

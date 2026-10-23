@@ -100,6 +100,7 @@ Origen: indicaciones de clase (incluida la Clase 11), según lo reportado por el
 
 - **Decisión:** **B**. **C** solo si aparece una necesidad real, y entonces como integración por servicio/API, nunca
   como acceso directo a la BD del monolito.
+- **Actualización (2026-10-23):** el ingeniero pidió usar la base del monolito. Se atiende con una importación acotada de solo lectura de tres tablas públicas, no con acceso directo desde el chat (ver D-19).
 - **Justificación defendible:** R-05 ya exige una base propia en PostgreSQL; R-12 prohíbe tocar el monolito;
   un servicio público no debe tener credenciales de una base con datos de clientes.
 - **Esquema de la BD de F02:** la BD es nuestra, así que gestionamos su esquema con **migraciones versionadas**
@@ -173,6 +174,7 @@ Navegador → Next.js → BFF ─┬→ consulta-service  (F01)
 - **Decisión:** **B**. `chatbot-service` **no consume** ninguna API de otro servicio; por lo tanto **no hay FeignClient en F02 por ahora.**
 - **Justificación defendible:** R-08 dice usar Feign *para consumir APIs*. F02 no consume ninguna; agregar Feign sin una API real
   sería código muerto. Si más adelante aparece una necesidad real (D-01, alternativa C), se usa Feign entonces.
+- **Aclaración (2026-10-23):** el importador de D-19 lee tres tablas del monolito por JDBC, no consume ninguna API; por eso sigue sin haber FeignClient en F02.
 - **Qué se retira:** la interfaz `ConsultaPublicaGateway` con stub y adaptador. Ya no tiene motivo de existir.
 - **Dónde vivirá la interfaz del chat:** el chat se construye como un componente autocontenido de Next.js, de modo que pueda
   ejecutarse solo y montarse después en la página pública (ver S-03).
@@ -267,6 +269,7 @@ Hechos técnicos relevantes:
     de modo que una ejecución que falla a medias se reintenta completa.
   - **Verificado:** 5 documentos → 16 chunks en `vector_store`; segunda ejecución → 0 ingeridos, 5 sin cambios, conteo intacto.
     Spring AI (`PgVectorStore`) escribe y borra correctamente sobre la tabla creada por Flyway.
+  - **Documento generado:** `knowledge/03-tarifas.md` ya no se escribe a mano: lo genera el importador de D-19 y esta ingesta lo indexa como cualquier otro documento.
 - **Nota Contract-First:** si la acción administrativa es un endpoint HTTP, **también se define en el YAML** (D-02); si es un comando o
   una tarea interna, no.
 - **Reversibilidad:** alta.
@@ -571,6 +574,37 @@ probablemente es la codificación de la consola (el BFF sí tolera esas peticion
 - Requiere que `web/` esté alojada en una dirección accesible desde la página anfitriona. Hoy solo se ejecuta en local (`npm run dev`), por lo que la demostración funciona en el equipo donde corre.
 - Se probó con una página de demostración en otro origen (`localhost:5000`) y en Edge; no se ha probado en la página real de F01 ni en otros navegadores.
 - El tamaño del panel es fijo en escritorio (400 × 600) y casi de pantalla completa en móvil; el color del botón está fijo en el script.
+
+### D-19 · Importación de datos públicos del monolito — *el ingeniero pidió usar la base del monolito; acota D-01*
+
+El ingeniero indicó de palabra que el chatbot debe usar la base de datos del monolito (se evalúa en la entrega final).
+D-01 rechazó conectar el RAG al monolito por ser una base compartida. Se busca una opción que cumpla lo pedido sin ese acoplamiento.
+
+| Alternativa | Ventajas | Desventajas |
+|---|---|---|
+| A. Consultar el monolito en cada pregunta | Datos siempre actuales | El chat cae si el monolito está apagado (se apaga para ahorrar costos); credenciales del monolito en el servicio público; es el antipatrón de D-01 |
+| B. Mantener documentos escritos a mano | Simple | Cifras inventadas o desactualizadas; no usa la base del monolito |
+| C. Importador de solo lectura que genera un documento | Datos reales; el chat no depende del monolito en ejecución; credenciales solo al importar | Los datos quedan atrasados hasta volver a importar |
+
+- **Decisión:** **C**. Es una excepción acotada a D-01: la base propia (pgvector) sigue siendo la única que usa el chat.
+  - **Qué se lee:** solo `Tb_Tipos_Servicio`, `Tb_Tarifas` y `Tb_Metodos_Pago`, con el usuario `chatbot_ro` (solo `SELECT` sobre esas tres tablas,
+    creado por el equipo del monolito, con `REQUIRE SSL` y acceso limitado a nuestra IP). Nunca datos de clientes.
+  - **Conexión:** JDBC de solo lectura con TLS verificado contra la CA del proyecto (`sslMode=verify-full`). La clave y el certificado
+    viven en `.env` y `secrets/`, ambos ignorados por Git.
+  - **Disparo:** perfil `import-monolith` con un `ApplicationRunner` (`@Order(1)`), análogo a D-08. Sin ese perfil el componente ni se crea.
+    Se combina con la ingesta: `SPRING_PROFILES_ACTIVE=import-monolith,ingest`.
+  - **Generación:** `TariffDocumentGenerator` es una función pura (sin base de datos ni reloj), probada con 12 casos con las filas reales.
+    Escribe `knowledge/03-tarifas.md` con las tarifas vigentes, la regla del exceso con ejemplos y las formas de pago.
+  - **Regla del exceso (tomada de `Lecturas.php` del monolito):** unidades de 1,000 litros redondeadas hacia arriba;
+    total = tarifa del servicio + unidades x tarifa de «Exceso» vigente.
+  - **Dato que no está en la base:** «Tarjeta» incluye débito y crédito, confirmado por el equipo del monolito (2026-10-22).
+  - **Verificado (2026-10-22):** 3 tipos, 6 tarifas y 3 métodos leídos del monolito real; 5 chunks indexados; el chat respondió Q 150.00
+    para 1/2 paja y Q 105.00 para 20,001 litros en 1/4 paja.
+- **Limitaciones:** el documento es una foto del momento de la importación; si cambian las tarifas hay que volver a importar y reindexar.
+  La importación sigue siendo manual.
+- **Pendiente:** confirmar por escrito con el ingeniero que esta importación cumple lo que pidió.
+- **Reversibilidad:** alta (basta no usar el perfil y mantener el documento).
+
 ---
 
 ## 3. Supuestos técnicos razonables
@@ -642,3 +676,5 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-16 Lógica de la UI (2026-10-12) | Lógica dentro de los componentes generados | Cliente `chatApi`, reductor `chatState` y cálculo `tilt` con TDD; hooks finos verificados a mano (D-16) |
 | D-17 Docker (2026-10-13) | Solo PostgreSQL en Docker Compose; el backend se ejecutaba con `./mvnw` | Backend con Dockerfile de dos etapas y servicio en Compose (puerto 8081); Ollama sigue en el equipo (D-17) |
 | D-18 Widget (2026-10-22) | El chat solo existía como página completa en `/` | Widget embebible: ruta `/embed` y script `widget.js` que abre el chat en un iframe, restringido con `frame-ancestors` (D-18) |
+| D-19 Datos de tarifas (2026-10-23) | `03-tarifas.md` escrito a mano con cifras inventadas | Generado por un importador de solo lectura desde el monolito; el chat no depende del monolito en ejecución (D-19) |
+| D-01 Monolito (2026-10-23) | Nunca acceso directo a la BD del monolito | Se mantiene para el chat; excepción acotada: importación de solo lectura de tres tablas públicas (D-19) |

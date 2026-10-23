@@ -5,7 +5,7 @@
 ## Dónde se puede pagar
 
 El recibo de agua se puede pagar en la ventanilla de la oficina, en los bancos autorizados y a
-través del portal de pagos en línea. En la ventanilla se aceptan efectivo y tarjeta de débito.
+través del portal de pagos en línea. Se aceptan efectivo, tarjeta (débito o crédito) y transferencia.
 
 ## Fecha límite de pago
 
@@ -15,7 +15,7 @@ El pago después de la fecha de vencimiento genera un recargo del 5 % sobre el m
 ## Suspensión por falta de pago
 
 Si el recibo acumula dos meses sin pagar, el servicio se suspende. Para restablecerlo se debe pagar
-la deuda pendiente más el costo de reconexión indicado en el documento de tarifas.
+la deuda pendiente. El costo de reconexión, si lo hay, debe consultarse en la oficina.
 
 ## Consultas sobre una cuenta personal
 

@@ -81,6 +81,21 @@ Los documentos de `knowledge/` se convierten en embeddings y se guardan en pgvec
 La aplicación procesa los documentos y termina sola. La ingesta es idempotente: un documento
 cuyo contenido no cambió se omite (no se vuelve a llamar a Ollama), y uno modificado reemplaza sus chunks.
 
+### Importar tarifas y formas de pago desde el monolito
+
+`knowledge/03-tarifas.md` se genera con los datos reales del monolito (tarifas vigentes, regla del exceso y formas de pago).
+No se edita a mano. Necesita el monolito encendido, tu IP autorizada, las variables `MONOLITH_DB_*` en el `.env`
+(ver `.env.example`) y el certificado en `secrets/oficina-agua-ca.pem`. Desde `backend/`:
+
+```bash
+set -a && source ../.env && set +a
+SPRING_PROFILES_ACTIVE=import-monolith,ingest ./mvnw spring-boot:run
+```
+
+La importación es de solo lectura (usuario `chatbot_ro`, TLS verificado) y termina sola; la ingesta que sigue indexa el documento nuevo.
+El chat no necesita el monolito encendido: usa el documento ya generado. Vuelve a ejecutarlo cuando cambien las tarifas y revisa
+el resultado con `git diff knowledge/03-tarifas.md` antes de commitearlo. Ver D-19 en `docs/decisiones-arquitectura.md`.
+
 ### Probar el chat
 
 Con la base cargada, arranca el backend (el puerto 8080 debe estar libre):

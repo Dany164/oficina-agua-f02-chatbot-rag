@@ -270,6 +270,7 @@ Hechos técnicos relevantes:
   - **Verificado:** 5 documentos → 16 chunks en `vector_store`; segunda ejecución → 0 ingeridos, 5 sin cambios, conteo intacto.
     Spring AI (`PgVectorStore`) escribe y borra correctamente sobre la tabla creada por Flyway.
   - **Documento generado:** `knowledge/03-tarifas.md` ya no se escribe a mano: lo genera el importador de D-19 y esta ingesta lo indexa como cualquier otro documento.
+  - **Redacción para el modelo de 3B (2026-10-23):** cada tema que la gente pregunta lleva su propia sección con un título parecido a la pregunta (la reconexión pasó de 0.50 a 0.68-0.70 de similitud al separarla), y las respuestas negativas se escriben como pregunta y respuesta ("¿Hay recargo por pagar tarde? No. ...") porque el modelo las confundía con "sin información". El umbral se mantiene en 0.55.
 - **Nota Contract-First:** si la acción administrativa es un endpoint HTTP, **también se define en el YAML** (D-02); si es un comando o
   una tarea interna, no.
 - **Reversibilidad:** alta.
@@ -678,3 +679,4 @@ Un supuesto no es un hecho. Cada uno indica qué lo invalidaría y qué cambiar�
 | D-18 Widget (2026-10-22) | El chat solo existía como página completa en `/` | Widget embebible: ruta `/embed` y script `widget.js` que abre el chat en un iframe, restringido con `frame-ancestors` (D-18) |
 | D-19 Datos de tarifas (2026-10-23) | `03-tarifas.md` escrito a mano con cifras inventadas | Generado por un importador de solo lectura desde el monolito; el chat no depende del monolito en ejecución (D-19) |
 | D-01 Monolito (2026-10-23) | Nunca acceso directo a la BD del monolito | Se mantiene para el chat; excepción acotada: importación de solo lectura de tres tablas públicas (D-19) |
+| D-08 Redacción de documentos (2026-10-23) | Secciones agrupadas por tema; negaciones en frase corta | Una sección por tema preguntado y negaciones como pregunta y respuesta; reglas de pago confirmadas por el equipo del monolito |

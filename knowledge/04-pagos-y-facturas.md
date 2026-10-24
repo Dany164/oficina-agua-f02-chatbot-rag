@@ -1,21 +1,28 @@
 # Pagos y facturas
 
-> Documento ficticio de prueba. Los datos no corresponden a ninguna institución real.
+> Reglas confirmadas por el equipo del monolito (2026-10-23). No están en la base de datos: se mantienen a mano en este documento.
 
 ## Dónde se puede pagar
 
-El recibo de agua se puede pagar en la ventanilla de la oficina, en los bancos autorizados y a
-través del portal de pagos en línea. Se aceptan efectivo, tarjeta (débito o crédito) y transferencia.
+El pago se realiza únicamente en la oficina, por el momento. No hay pago en bancos ni en línea.
+Las formas de pago aceptadas están en el documento de tarifas: efectivo, tarjeta (débito o crédito) y transferencia.
 
-## Fecha límite de pago
+## Cómo funciona el cobro
 
-El recibo se emite el primer día de cada mes y vence el día 20 del mismo mes.
-El pago después de la fecha de vencimiento genera un recargo del 5 % sobre el monto del recibo.
+Cada consumo de agua se registra como una lectura y queda pendiente. Cuando la persona paga en la oficina,
+se emite el recibo de pago y la lectura pasa de pendiente a pagada.
+
+## Recargo o mora por pago tardío
+
+¿Hay recargo por pagar tarde? No. Pagar tarde no genera ningún recargo ni mora; el monto de la lectura es el mismo sin importar cuándo se pague.
 
 ## Suspensión por falta de pago
 
-Si el recibo acumula dos meses sin pagar, el servicio se suspende. Para restablecerlo se debe pagar
-la deuda pendiente. El costo de reconexión, si lo hay, debe consultarse en la oficina.
+Si la persona acumula 3 meses sin pagar, el servicio se suspende.
+
+## Costo de reconexión
+
+Para restablecer un servicio suspendido se debe pagar la deuda pendiente más el costo de reconexión, que es de Q 100.00.
 
 ## Consultas sobre una cuenta personal
 

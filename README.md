@@ -204,12 +204,10 @@ decisiones están en `docs/decisiones-arquitectura.md` (D-18).
 
 ## Estado
 
-En desarrollo.
+Completo para la demostración local. El historial en DynamoDB es opcional y no se implementó.
 
-- Hecho: esqueleto del backend, contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway,
-  integración con Ollama, ingesta de documentos y flujo de consulta RAG (umbral de similitud, prompt restrictivo,
-  límite de longitud del mensaje, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`), BFF en
-  Next.js (`POST /api/chat` con validación, límite propio y errores genéricos), pantalla de chat generada con v0
-  (cliente del navegador, estado de la conversación y mascota con seguimiento del puntero), backend en Docker
-  (Dockerfile y servicio en Docker Compose) y widget embebible para la página pública (`/embed` y `widget.js`).
+- Backend: contrato OpenAPI (Contract-First), manejo de errores, PostgreSQL + pgvector con Flyway, Ollama, ingesta idempotente, consulta RAG (umbral de similitud, prompt restrictivo, errores 400, 503 y 500), rate limiting por IP (429 con `Retry-After`) y Docker.
+- Datos reales: tarifas, tipos de servicio y formas de pago importados del monolito en solo lectura (D-19), y reglas de pago confirmadas por el equipo del monolito.
+- Web: BFF en Next.js (`POST /api/chat`), pantalla de chat generada con v0 y widget embebible para la página pública (`/embed` y `widget.js`).
 - Pendiente: historial en DynamoDB (opcional).
+- Limitaciones conocidas: la importación del monolito es manual, los documentos 01, 02 y 05 de `knowledge/` siguen siendo de prueba y el widget solo se probó en local.

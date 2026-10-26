@@ -12,10 +12,10 @@
 |---|---|
 | Proyecto Jira | `MicroServicios-Oficina-de-Agua`, clave `MODA`, Scrum/Backlog, sprints de ~1 semana |
 | Estructura en Jira | `MODA-2` (Épica: F02 - Implementación del Chatbot con RAG) → `MODA-1` (F02 - Chatbot con RAG en la página pública) |
-| `MODA-1` | Por hacer, sin asignar, informador: Dany Mateo. Representa la feature F02; **no se duplica** |
-| Historias, subtareas y sprints de F02 | **Ninguno creado todavía**, a propósito |
+| `MODA-1` | En curso, asignada a Dany Mateo (informador: Dany Mateo). Representa la feature F02; **no se duplica** |
+| Historias de F02 | `MODA-4` a `MODA-16` y `MODA-33` (widget) en revisión; `MODA-17` (DynamoDB, opcional) por hacer. La importación del monolito se rastrea con los PR #19 y #20 |
 | Repositorio | `github.com/Dany164/oficina-agua-f02-chatbot-rag`, **privado** durante el desarrollo; público solo si el curso lo exige |
-| Trabajo en Git | `main` contiene la base del backend, ingesta de documentos y consulta RAG (PR #1 a #11 fusionados). Rama en curso: `feature/f02-rate-limiting` |
+| Trabajo en Git | `main` contiene todo F02 salvo lo opcional: backend, ingesta, RAG, rate limiting, BFF, interfaz, Docker, widget, importación del monolito y reglas de pago (PR #1 a #21 fusionados). Sin ramas abiertas |
 | Integración GitHub–Jira | No asumida; se verifica cuando corresponda |
 | Grupo | Es el mismo que desarrolló el monolito en la Fase 1: conocemos el sistema y su base de datos |
 | Regla principal de Fase 2 | **El monolito heredado NO se modifica.** Todo es servicio nuevo alrededor de él |
@@ -603,7 +603,7 @@ D-01 rechazó conectar el RAG al monolito por ser una base compartida. Se busca 
     para 1/2 paja y Q 105.00 para 20,001 litros en 1/4 paja.
 - **Limitaciones:** el documento es una foto del momento de la importación; si cambian las tarifas hay que volver a importar y reindexar.
   La importación sigue siendo manual.
-- **Pendiente:** confirmar por escrito con el ingeniero que esta importación cumple lo que pidió.
+- **Confirmación (2026-10-26, verbal):** el ingeniero indicó que no hace falta consulta en vivo y que la importación con la ingesta actual basta para la demostración. No consta por escrito.
 - **Reversibilidad:** alta (basta no usar el perfil y mantener el documento).
 
 ---

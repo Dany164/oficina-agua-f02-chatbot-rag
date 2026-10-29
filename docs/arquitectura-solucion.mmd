@@ -1,0 +1,53 @@
+flowchart LR
+  subgraph USR["Usuarios"]
+    ADM["Personal de la oficina<br/>(administrador, secretaria)"]
+    CIU["Ciudadano<br/>(página pública)"]
+  end
+
+  subgraph MONO["Monolito CodeIgniter 4 (PHP 8.2)"]
+    CI["App web MVC<br/>clientes, contadores, lecturas,<br/>pagos, tarifas"]
+    MDB[("MariaDB<br/>oficina_agua")]
+    CI -->|"lee y escribe"| MDB
+  end
+
+  subgraph F01["F01 Consulta pública con captcha"]
+    W1["consulta-web<br/>Next.js :4000<br/>BFF + reCAPTCHA"]
+    S1["consulta-service<br/>Spring Boot :8081<br/>solo lectura"]
+    W1 -->|"HTTP + X-Internal-Token"| S1
+  end
+
+  subgraph F02["F02 Chatbot con RAG"]
+    W2["web Next.js :3000<br/>widget.js, /embed, BFF /api/chat"]
+    B2["chatbot-service<br/>Spring Boot + Spring AI"]
+    PG[("PostgreSQL + pgvector<br/>base propia")]
+    W2 -->|"HTTP REST<br/>POST /api/v1/chat/messages"| B2
+    B2 -->|"embeddings y búsqueda"| PG
+  end
+
+  subgraph F04["F04 Replicación asíncrona"]
+    S4["sync-service<br/>Spring Boot<br/>@Async, 202 + jobId"]
+  end
+
+  subgraph F03["F03 Pagos por colas"]
+    P3["pendiente de documentar"]
+  end
+
+  subgraph EXT["Sistemas externos"]
+    GR["Google reCAPTCHA"]
+    OL["Ollama (local)<br/>qwen2.5:3b, bge-m3"]
+    DDB[("DynamoDB")]
+    PAY["Sistemas de pago<br/>externos"]
+    Q{{"Cola de mensajes"}}
+  end
+
+  ADM -->|"navegador"| CI
+  CIU --> W1
+  W1 -.->|"verifica captcha"| GR
+  W1 -.->|"carga widget.js e iframe /embed"| W2
+  S1 -->|"SELECT"| MDB
+  B2 -->|"chat y embeddings"| OL
+  B2 -.->|"importador manual: SELECT<br/>3 tablas, TLS"| MDB
+  S4 -->|"SELECT"| MDB
+  S4 -->|"upsert"| DDB
+  P3 -.-> Q
+  Q -.-> PAY

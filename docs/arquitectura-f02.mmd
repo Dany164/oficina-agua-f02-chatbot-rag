@@ -1,0 +1,13 @@
+flowchart TB
+  U["Navegador"] -->|"página anfitriona"| H["Página pública (F01)"]
+  H -->|"script widget.js"| WG["Widget<br/>Shadow DOM + iframe"]
+  WG -->|"/embed"| FE["Interfaz de chat<br/>Next.js 16"]
+  FE -->|"POST /api/chat"| BFF["BFF Next.js<br/>valida, limita 10/60 s"]
+  BFF -->|"POST /api/v1/chat/messages"| API["ChatController<br/>contrato OpenAPI"]
+  API --> RAG["RagService<br/>top-k 4, umbral 0.55"]
+  RAG -->|"búsqueda por similitud"| VS[("pgvector<br/>vector_store")]
+  RAG -->|"prompt con contexto"| LLM["Ollama<br/>qwen2.5:3b"]
+  ING["Ingesta (perfil ingest)<br/>knowledge/*.md"] -->|"chunks + embeddings bge-m3"| VS
+  IMP["Importador (perfil import-monolith)"] -->|"genera"| K3["knowledge/03-tarifas.md"]
+  K3 --> ING
+  MDB[("MariaDB del monolito<br/>solo lectura, TLS")] -->|"3 tablas públicas"| IMP

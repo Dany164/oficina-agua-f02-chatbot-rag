@@ -1,0 +1,75 @@
+flowchart TD
+
+subgraph group_web["Interfaz web (Next.js)"]
+  node_chat_ui["Interfaz del chat<br/>[chat-panel.tsx]"]
+  node_chat_hook["Estado del chat<br/>[use-chat.ts]"]
+  node_web_route["BFF /api/chat<br/>[route.ts]<br/>límite de peticiones"]
+  node_widget["Widget incrustable<br/>[widget.js]"]
+end
+
+subgraph group_backend["Backend del chat (Spring Boot)"]
+  node_backend_api["ChatController<br/>límite de peticiones"]
+  node_rag_service["Orquestación RAG<br/>[RagService.java]"]
+  node_retriever["Recuperación de fragmentos"]
+  node_prompt_builder["Construcción del prompt"]
+  node_answer_generator["Generación de respuesta"]
+  node_spring_ai["Adaptador Spring AI"]
+end
+
+subgraph group_knowledge["Ingesta de conocimiento"]
+  node_ingest_runner["Runner de ingesta"]
+  node_ingest_service["Servicio de ingesta"]
+  node_chunk_factory["Preparación de fragmentos"]
+  node_document_registry[("Registro de documentos")]
+end
+
+subgraph group_catalog["Importación desde el monolito"]
+  node_monolith_runner["Runner de importación"]
+  node_catalog_repository["Lector de tarifas y formas de pago"]
+  node_tariff_generator["Generador del documento de tarifas"]
+end
+
+node_visitor(("Visitante"))
+node_vector_store[("PostgreSQL + pgvector<br/>(Docker)")]
+node_llm{{"Ollama (local)<br/>chat: qwen2.5:3b<br/>embeddings: bge-m3"}}
+node_knowledge_files["Documentos de conocimiento"]
+node_monolith_db[("BD del monolito<br/>(solo lectura, solo al importar)")]
+
+node_visitor -->|"hace una pregunta"| node_chat_ui
+node_chat_ui -->|"envía el mensaje"| node_chat_hook
+node_chat_hook -.->|"envía la petición"| node_web_route
+node_web_route -->|"reenvía la petición"| node_backend_api
+node_backend_api -->|"llama a"| node_rag_service
+node_rag_service -->|"recupera fragmentos"| node_retriever
+node_rag_service -->|"construye el prompt"| node_prompt_builder
+node_rag_service -->|"pide la generación"| node_answer_generator
+node_retriever -.->|"busca por similitud"| node_vector_store
+node_answer_generator -->|"implementada por"| node_spring_ai
+node_spring_ai -.->|"genera la respuesta"| node_llm
+node_ingest_runner -->|"inicia la ingesta"| node_ingest_service
+node_ingest_service -->|"lee los .md"| node_knowledge_files
+node_ingest_service -->|"crea fragmentos"| node_chunk_factory
+node_ingest_service -->|"verifica hash y actualiza"| node_document_registry
+node_ingest_service -->|"guarda fragmentos"| node_vector_store
+node_monolith_runner -.->|"lee el catálogo"| node_catalog_repository
+node_catalog_repository -->|"SELECT de 3 tablas"| node_monolith_db
+node_monolith_runner -.->|"genera el documento"| node_tariff_generator
+node_visitor -->|"abre el botón"| node_widget
+node_widget -->|"carga /embed en iframe"| node_chat_ui
+node_tariff_generator -->|"escribe 03-tarifas.md"| node_knowledge_files
+node_retriever -.->|"vectoriza la pregunta"| node_llm
+node_ingest_service -.->|"vectoriza fragmentos"| node_llm
+
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_chat_ui,node_chat_hook,node_web_route,node_widget toneBlue
+class node_backend_api,node_rag_service,node_retriever,node_prompt_builder,node_answer_generator,node_spring_ai,node_vector_store,node_monolith_db toneAmber
+class node_ingest_runner,node_ingest_service,node_chunk_factory,node_document_registry toneMint
+class node_monolith_runner,node_catalog_repository,node_tariff_generator toneRose
+class node_visitor,node_llm,node_knowledge_files toneIndigo

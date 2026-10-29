@@ -10,7 +10,7 @@ mediante RAG (Retrieval-Augmented Generation) y no solo con el conocimiento gene
 
 > Este documento se elaboró con ayuda de IA (Claude) y se verificó contra el código real de los repositorios de la solución.
 
-## 1. Arquitectura de la solución
+## 1. Contexto: la solución completa
 
 La solución es un **monolito** más **cuatro funcionalidades nuevas** (F01 a F04). Cada funcionalidad vive en su propio
 repositorio y se ejecuta de forma independiente.
@@ -22,6 +22,9 @@ repositorio y se ejecuta de forma independiente.
 | **F02 Chatbot con RAG (este repositorio)** | `backend/` (Spring Boot + Spring AI + pgvector) y `web/` (Next.js, BFF y widget). | https://github.com/Dany164/oficina-agua-f02-chatbot-rag |
 | F03 Envío de pagos por colas | *Pendiente de documentar.* | *Pendiente* |
 | F04 Replicación asíncrona | `sync-service` (Spring Boot): replica contadores y lecturas hacia DynamoDB con un trabajo asíncrono. | https://github.com/EdgarFive/oficina-agua-f04-sync-service |
+
+Este diagrama muestra dónde encaja F02 dentro de la solución. El diagrama propio del módulo, con su detalle interno, está en la
+sección 4.1. Los demás módulos se representan a alto nivel, según sus repositorios públicos.
 
 ![Arquitectura de la solución](docs/arquitectura-solucion.png)
 

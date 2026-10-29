@@ -73,6 +73,10 @@ Flujo de una pregunta:
 
 ![Arquitectura de F02](docs/arquitectura-f02.png)
 
+Detalle interno del módulo (clases y archivos principales, ingesta e importación desde el monolito):
+
+![Detalle interno de F02](docs/arquitectura-rag-detalle.png)
+
 1. **Ingesta (una vez):** los documentos de `knowledge/` se parten en fragmentos, se convierten en vectores con `bge-m3`
    y se guardan en pgvector.
 2. **Consulta:** el backend convierte la pregunta en un vector y recupera los 4 fragmentos más parecidos con similitud mínima

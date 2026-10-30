@@ -29,15 +29,15 @@ flowchart LR
   end
 
   subgraph F03["F03 Pagos por colas"]
-    P3["pendiente de documentar"]
+    P3["pagos-producer<br/>Spring Boot<br/>publica y envía pagos"]
   end
 
   subgraph EXT["Sistemas externos"]
     GR["Google reCAPTCHA"]
     OL["Ollama (local)<br/>qwen2.5:3b, bge-m3"]
     DDB[("DynamoDB")]
-    PAY["Sistemas de pago<br/>externos"]
-    Q{{"Cola de mensajes"}}
+    BANK["Banco simulado<br/>(API del docente, AWS)"]
+    Q{{"Kafka"}}
   end
 
   ADM -->|"navegador"| CI
@@ -49,5 +49,7 @@ flowchart LR
   B2 -.->|"importador manual: SELECT<br/>3 tablas, TLS"| MDB
   S4 -->|"SELECT"| MDB
   S4 -->|"upsert"| DDB
-  P3 -.-> Q
-  Q -.-> PAY
+  P3 -.->|"lee pagos pendientes"| MDB
+  P3 -->|"publica el pago"| Q
+  Q -->|"consumidor"| P3
+  P3 -->|"HTTP, idempotente"| BANK

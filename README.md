@@ -138,9 +138,13 @@ Datos de prueba y resultado esperado:
 | Pregunta | Resultado esperado |
 |---|---|
 | ¿Cuánto cuesta el servicio de 1/2 paja? | Q 150.00, con la fuente de tarifas. |
-| ¿Cuánto pago por 20,001 litros en 1/4 paja? | Q 105.00 (tarifa más una unidad de exceso). |
+| ¿Cuántos litros incluye el servicio de 1/2 paja? | 60,000 litros de consumo al mes. |
 | ¿Hay recargo por pagar tarde? | No hay recargo ni mora. |
 | ¿Cuál es la capital de Francia? | Dice que no tiene información suficiente y no muestra fuentes. |
+
+Limitación conocida: los cálculos con exceso de consumo (por ejemplo, 20,001 litros) dependen de la aritmética del modelo local
+`qwen2.5:3b`, que a veces se equivoca aunque los datos recuperados sean correctos. Con `qwen2.5:7b` acierta, pero en un equipo
+sin GPU suficiente tarda hasta 16 segundos. Datos directos (tarifas, horarios, formas de pago, recargos) responden de forma estable.
 
 Prueba directa del backend: `curl -s -X POST http://localhost:8081/api/v1/chat/messages -H "Content-Type: application/json" -d '{"message":"Cual es el horario de atencion?"}'`.
 Detener todo: `docker compose down`.
@@ -346,4 +350,4 @@ Completo para la demostración local. El historial en DynamoDB es opcional y no 
 - Datos reales: tarifas, tipos de servicio y formas de pago importados del monolito en solo lectura (D-19), y reglas de pago confirmadas por el equipo del monolito.
 - Web: BFF en Next.js (`POST /api/chat`), pantalla de chat generada con v0 y widget embebible para la página pública (`/embed` y `widget.js`).
 - Pendiente: historial en DynamoDB (opcional).
-- Limitaciones conocidas: la importación del monolito es manual, los documentos 01, 02 y 05 de `knowledge/` siguen siendo de prueba y el widget solo se probó en local.
+- Limitaciones conocidas: el cálculo de totales con exceso puede fallar con el modelo pequeño, la importación del monolito es manual, los documentos 01, 02 y 05 de `knowledge/` siguen siendo de prueba y el widget solo se probó en local.

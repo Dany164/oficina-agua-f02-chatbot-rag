@@ -20,7 +20,7 @@ repositorio y se ejecuta de forma independiente.
 | Monolito | Sistema de la oficina: CodeIgniter 4 (PHP 8.2) y MariaDB. Pantallas con login para clientes, contadores, lecturas, pagos y tarifas. | https://github.com/Dany164/sistema-oficina-agua |
 | F01 Consulta pública con captcha | `consulta-service` (Spring Boot, solo lectura) y `consulta-web` (Next.js con reCAPTCHA). | https://github.com/Dansosa18/Consulta_Publica_Con_Captcha |
 | **F02 Chatbot con RAG (este repositorio)** | `backend/` (Spring Boot + Spring AI + pgvector) y `web/` (Next.js, BFF y widget). | https://github.com/Dany164/oficina-agua-f02-chatbot-rag |
-| F03 Envío de pagos por colas | *Pendiente de documentar.* | *Pendiente* |
+| F03 Envío de pagos por colas | `pagos-producer` (Spring Boot): toma los pagos cobrados, los publica en una cola de Kafka y los envía a un banco simulado con reintentos. | https://github.com/Luisardium/pagos-producer-service |
 | F04 Replicación asíncrona | `sync-service` (Spring Boot): replica contadores y lecturas hacia DynamoDB con un trabajo asíncrono. | https://github.com/EdgarFive/oficina-agua-f04-sync-service |
 
 Este diagrama muestra dónde encaja F02 dentro de la solución. El diagrama propio del módulo, con su detalle interno, está en la
@@ -28,19 +28,18 @@ sección 4.1. Los demás módulos se representan a alto nivel, según sus reposi
 
 ![Arquitectura de la solución](docs/arquitectura-solucion.png)
 
-Lectura del diagrama (línea continua: relación implementada en el código; línea punteada: relación ocasional o
-pendiente):
+Lectura del diagrama (línea continua: relación implementada en el código; línea punteada: relación ocasional):
 
 - **Monolito:** escribe y lee su base MariaDB. No expone una API: sus rutas son pantallas con sesión y roles.
-- **Las funcionalidades no llaman al monolito por HTTP.** Se relacionan con él **por su base de datos, en solo lectura**,
-  con usuarios que tienen únicamente `SELECT`.
+- **Las funcionalidades no llaman al monolito por HTTP.** Se relacionan con él **por su base de datos**. F01, F02 y F04
+  solo leen, con usuarios que tienen únicamente `SELECT`; F03 trabaja con la tabla de pagos.
 - **F01:** la persona consulta desde `consulta-web`, que verifica el reCAPTCHA con Google y llama a `consulta-service`.
   Esta página es también la anfitriona del widget del chatbot.
 - **F02:** el widget de la página pública abre el chat. El BFF de Next.js llama al backend, que busca en pgvector y
   genera la respuesta con Ollama.
 - **F04:** `sync-service` lee contadores y lecturas y los copia a DynamoDB mediante un trabajo asíncrono (respuesta `202`
   con un `jobId` que se consulta después). Usa un pool de hilos de Spring, no una cola de mensajes.
-- **F03:** pendiente.
+- **F03:** `pagos-producer` lee los pagos pendientes, los publica en Kafka y un consumidor los envía por HTTP al banco simulado del docente, con reintentos y una cola de errores.
 
 > Nota de alcance: en los repositorios de F01 y F04 las bases de datos de prueba son copias propias con datos de ejemplo
 > (por Docker), con las tablas que cada módulo necesita. Cada módulo se ejecuta de forma independiente y su procedimiento está en su

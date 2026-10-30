@@ -8,8 +8,6 @@ Modulo asignado: Chatbot con RAG
 Chatbot de la página pública de la Oficina de Agua. Responde preguntas con información institucional recuperada
 mediante RAG (Retrieval-Augmented Generation) y no solo con el conocimiento general del modelo.
 
-> Este documento se elaboró con ayuda de IA (Claude) y se verificó contra el código real de los repositorios de la solución.
-
 ## 1. Contexto: la solución completa
 
 La solución es un **monolito** más **cuatro funcionalidades nuevas** (F01 a F04). Cada funcionalidad vive en su propio
